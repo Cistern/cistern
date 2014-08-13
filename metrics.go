@@ -74,7 +74,7 @@ func getUint64Value(i interface{}) uint64 {
 type MetricState interface {
 	Type() MetricType
 	Update(interface{}) MetricState
-	Value() interface{}
+	Value() float32
 }
 
 type DerivativeState struct {
@@ -102,7 +102,7 @@ func (g GaugeState) Type() MetricType {
 	return TypeGauge
 }
 
-func (g GaugeState) Value() interface{} {
+func (g GaugeState) Value() float32 {
 	return g.value
 }
 
@@ -126,7 +126,7 @@ func (d DerivativeState) Type() MetricType {
 	return TypeDerivative
 }
 
-func (d DerivativeState) Value() interface{} {
+func (d DerivativeState) Value() float32 {
 	return d.value
 }
 

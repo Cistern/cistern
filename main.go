@@ -4,13 +4,18 @@ import (
 	"github.com/PreetamJinka/sflow-go"
 	"github.com/PreetamJinka/udpchan"
 
+	"flag"
 	"fmt"
 	"log"
 	"time"
 )
 
 func main() {
-	c, err := udpchan.Listen(":6343", nil)
+	listenAddr := flag.String("listen", ":6343", "address of the sFlow datagram collector")
+	httpAddr := flag.String("listen-http", ":8080", "address of the HTTP server")
+	flag.Parse()
+
+	c, err := udpchan.Listen(*listenAddr, nil)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -22,6 +27,8 @@ func main() {
 			fmt.Println(registry)
 		}
 	}()
+
+	go RunHTTP(*httpAddr, registry)
 
 	p := &Pipeline{}
 

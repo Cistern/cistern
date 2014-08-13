@@ -34,19 +34,16 @@ func main() {
 	for buf := range c {
 		dgram := sflow.Decode(buf)
 		ip := dgram.Header.IpAddress
-		var records []sflow.Record
 
 		for _, sample := range dgram.Samples {
 			switch sample.SampleType() {
 			case sflow.TypeCounterSample, sflow.TypeExpandedCounterSample:
-				records = append(records, sample.GetRecords()...)
-			}
-		}
-
-		for _, rec := range records {
-			messages <- Message{
-				Source: ip.String(),
-				Record: rec,
+				for _, rec := range sample.GetRecords() {
+					messages <- Message{
+						Source: ip.String(),
+						Record: rec,
+					}
+				}
 			}
 		}
 	}

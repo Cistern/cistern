@@ -5,7 +5,6 @@ import (
 	"github.com/PreetamJinka/udpchan"
 
 	"flag"
-	"fmt"
 	"log"
 	"time"
 )
@@ -29,13 +28,7 @@ func main() {
 	registry := NewHostRegistry()
 
 	go func() {
-		for _ = range time.Tick(time.Second) {
-			fmt.Println(registry)
-		}
-	}()
-
-	go func() {
-		for _ = range time.Tick(time.Minute) {
+		for _ = range time.Tick(10 * time.Second) {
 			metricStorage.SnapshotRegistry(registry)
 		}
 	}()

@@ -11,14 +11,7 @@ import (
 
 func main() {
 	listenAddr := flag.String("listen", ":6343", "address of the sFlow datagram collector")
-	httpAddr := flag.String("listen-http", ":8080", "address of the HTTP server")
-	storageFile := flag.String("storage-file", "cistern.db", "Location of the metrics data")
 	flag.Parse()
-
-	metricStorage, err := OpenOrCreateStorage(*storageFile)
-	if err != nil {
-		log.Fatalln(err)
-	}
 
 	c, err := udpchan.Listen(*listenAddr, nil)
 	if err != nil {
@@ -27,18 +20,16 @@ func main() {
 
 	registry := NewHostRegistry()
 
-	go func() {
-		for _ = range time.Tick(10 * time.Second) {
-			metricStorage.SnapshotRegistry(registry)
-		}
-	}()
-
-	go RunHTTP(*httpAddr, registry, metricStorage)
-
 	p := &Pipeline{}
 
 	p.Add(NewHostProcessor(registry))
 	p.Add(NewGenericIfaceProcessor(registry))
+
+	go func() {
+		for _ = range time.Tick(time.Second) {
+			log.Print(registry)
+		}
+	}()
 
 	messages := make(chan Message)
 	go p.Run(messages)

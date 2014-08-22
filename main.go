@@ -5,6 +5,7 @@ import (
 	"github.com/PreetamJinka/udpchan"
 
 	"flag"
+	"fmt"
 	"log"
 	"time"
 )
@@ -27,7 +28,39 @@ func main() {
 
 	go func() {
 		for _ = range time.Tick(time.Second) {
-			log.Print(registry)
+			hosts := registry.GetHosts()
+			for _, host := range hosts {
+				cpuMetrics := []string{
+					"cpu.user",
+					"cpu.sys",
+					"cpu.nice",
+					"cpu.wio",
+					"cpu.intr",
+					"cpu.softintr",
+					"cpu.idle",
+				}
+				metrics, err := registry.Query(host, cpuMetrics...)
+				if err != nil {
+					continue
+				}
+
+				var totalTime float32
+
+				for _, metric := range metrics {
+					totalTime += metric
+				}
+
+				totalTime /= 100
+
+				fmt.Printf("[%s] %.02f%%us %.02f%%sys %.02f%%ni %.02f%%io %.02f%%in %.02f%%si %.02f%%id\n",
+					host, metrics[0]/totalTime,
+					metrics[1]/totalTime,
+					metrics[2]/totalTime,
+					metrics[3]/totalTime,
+					metrics[4]/totalTime,
+					metrics[5]/totalTime,
+					metrics[6]/totalTime)
+			}
 		}
 	}()
 

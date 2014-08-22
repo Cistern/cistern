@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"math"
 	"time"
 )
 
@@ -150,6 +151,15 @@ func (m *MetricRegistry) Update(metric string, metricType MetricType, value inte
 	m.metrics[metric] = state.Update(value)
 
 	return nil
+}
+
+func (m *MetricRegistry) Get(metric string) float32 {
+	state, present := m.metrics[metric]
+	if !present {
+		return float32(math.NaN())
+	}
+
+	return state.Value()
 }
 
 func (m *MetricRegistry) String() string {

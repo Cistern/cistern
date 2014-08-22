@@ -29,6 +29,8 @@ func main() {
 	go func() {
 		for _ = range time.Tick(time.Second) {
 			hosts := registry.GetHosts()
+
+		HOST_LOOP:
 			for _, host := range hosts {
 				cpuMetrics := []string{
 					"cpu.user",
@@ -47,6 +49,9 @@ func main() {
 				var totalTime float32
 
 				for _, metric := range metrics {
+					if metric != metric {
+						continue HOST_LOOP
+					}
 					totalTime += metric
 				}
 

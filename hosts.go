@@ -10,6 +10,8 @@ var (
 	ErrUnknownHost = errors.New("host registry: unknown host")
 )
 
+// This is basically a structure to hold
+// states which are organized by a host string.
 type HostRegistry struct {
 	lock  sync.RWMutex
 	hosts map[string]*MetricRegistry

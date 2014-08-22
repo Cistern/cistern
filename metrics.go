@@ -18,6 +18,7 @@ var (
 	ErrUnknownMetric = errors.New("unknown metric")
 )
 
+// We want to go from some type of number to a float32.
 func getFloat32Value(i interface{}) float32 {
 	switch n := i.(type) {
 	case int:
@@ -47,6 +48,7 @@ func getFloat32Value(i interface{}) float32 {
 	return i.(float32)
 }
 
+// We want to go from some type of number to a uint64.
 func getUint64Value(i interface{}) uint64 {
 	switch n := i.(type) {
 	case int:
@@ -80,8 +82,15 @@ type MetricState interface {
 
 type DerivativeState struct {
 	lastUpdated time.Time
-	prev        uint64
-	value       float32
+
+	// This is a uint64 because we want calculate
+	// derivatives accurately.
+	//
+	// When's the last time you saw a system
+	// counter that was a float?
+	prev uint64
+
+	value float32
 }
 
 type GaugeState struct {
@@ -112,11 +121,16 @@ func (d DerivativeState) Update(value interface{}) MetricState {
 	timeDelta := now.Sub(d.lastUpdated)
 
 	currentValue := getUint64Value(value)
+
 	if d.prev >= currentValue {
+		// Rollover? Keep the value we have.
+		d.lastUpdated = now
+		d.prev = currentValue
 		return d
 	}
 
 	d.value = float32(float64(currentValue-d.prev) / timeDelta.Seconds())
+
 	d.lastUpdated = now
 	d.prev = currentValue
 

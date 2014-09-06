@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"time"
 )
 
@@ -34,6 +35,8 @@ func main() {
 	messages := make(chan Message)
 	// Start the pipeline processes.
 	go p.Run(messages)
+
+	go http.ListenAndServe(":8080", ServeHostCpuStats(registry))
 
 	// buf is a UDP payload.
 	for buf := range c {

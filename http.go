@@ -30,6 +30,13 @@ type memStats struct {
 	Cached  float32 `json:"cached"`
 }
 
+type netStats struct {
+	BytesIn    float32 `json:"bytesIn"`
+	PacketsIn  float32 `json:"packetsIn"`
+	BytesOut   float32 `json:"bytesOut"`
+	PacketsOut float32 `json:"packetsOut"`
+}
+
 func ServeHostCpuStats(registry *HostRegistry) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -87,9 +94,8 @@ func ServeHostCpuStats(registry *HostRegistry) http.Handler {
 				metrics[6] / totalTime,
 			}
 
-			metrics, err = registry.Query(host, []string{
-				"mem.total", "mem.free", "mem.shared", "mem.buffers", "mem.cached",
-			}...)
+			metrics, err = registry.Query(host, "mem.total", "mem.free",
+				"mem.shared", "mem.buffers", "mem.cached")
 
 			if err == nil {
 				h.Stats["mem"] = memStats{
@@ -98,6 +104,18 @@ func ServeHostCpuStats(registry *HostRegistry) http.Handler {
 					metrics[2],
 					metrics[3],
 					metrics[4],
+				}
+			}
+
+			metrics, err = registry.Query(host, "net.bytes_in", "net.packets_in",
+				"net.bytes_out", "net.packets_out")
+
+			if err == nil {
+				h.Stats["net"] = netStats{
+					metrics[0],
+					metrics[1],
+					metrics[2],
+					metrics[3],
 				}
 			}
 

@@ -20,6 +20,8 @@ func (p *Pipeline) Run(inbound chan Message) {
 		inbound = proc.Outbound()
 		go proc.Process()
 	}
+
+	go (&BlackholeProcessor{inbound: inbound}).Process()
 }
 
 type Message struct {
@@ -33,6 +35,24 @@ type PipelineProcessor interface {
 	Outbound() chan Message
 }
 
+type BlackholeProcessor struct {
+	inbound chan Message
+}
+
+func (b *BlackholeProcessor) SetInbound(inbound chan Message) {
+	b.inbound = inbound
+}
+
+func (b *BlackholeProcessor) Process() {
+	for m := range b.inbound {
+		fmt.Println("dumping message:", m)
+	}
+}
+
+func (b *BlackholeProcessor) Outbound() chan Message {
+	return nil
+}
+
 type HostProcessor struct {
 	reg      *HostRegistry
 	inbound  chan Message
@@ -42,7 +62,7 @@ type HostProcessor struct {
 func NewHostProcessor(reg *HostRegistry) *HostProcessor {
 	return &HostProcessor{
 		reg:      reg,
-		outbound: make(chan Message, 8),
+		outbound: make(chan Message),
 	}
 }
 
@@ -116,7 +136,10 @@ func (h *HostProcessor) Process() {
 			h.reg.Insert(registryKey, "net.drops_out", TypeDerivative, n.DropsOut)
 
 		default:
-			h.outbound <- message
+			select {
+			case h.outbound <- message:
+			default:
+			}
 		}
 	}
 }
@@ -130,7 +153,7 @@ type GenericIfaceProcessor struct {
 func NewGenericIfaceProcessor(reg *HostRegistry) *GenericIfaceProcessor {
 	return &GenericIfaceProcessor{
 		reg:      reg,
-		outbound: make(chan Message, 8),
+		outbound: make(chan Message),
 	}
 }
 
@@ -166,7 +189,10 @@ func (p *GenericIfaceProcessor) Process() {
 			p.reg.Insert(registryKey, fmt.Sprintf("if%d.errors_out", c.Index), TypeDerivative, c.OutErrors)
 
 		default:
-			p.outbound <- message
+			select {
+			case p.outbound <- message:
+			default:
+			}
 		}
 	}
 }

@@ -28,9 +28,6 @@ func main() {
 	p.Add(NewHostProcessor(registry))
 	p.Add(NewGenericIfaceProcessor(registry))
 
-	// This is just for fun!
-	go printHostStats(registry)
-
 	// Create a channel for pipeline messages.
 	messages := make(chan Message)
 	// Start the pipeline processes.
@@ -38,28 +35,35 @@ func main() {
 
 	go http.ListenAndServe(":8080", ServeHostCpuStats(registry))
 
-	// buf is a UDP payload.
-	for buf := range c {
-		// Decode it.
-		dgram := sflow.Decode(buf)
-		ip := dgram.Header.IpAddress
+	datagramChan := make(chan []byte)
 
-		for _, sample := range dgram.Samples {
-			switch sample.SampleType() {
+	go func() {
+		for buf := range datagramChan {
+			// Decode it.
+			dgram := sflow.Decode(buf)
+			ip := dgram.Header.IpAddress
 
-			// We're only interested in counters (for now).
-			case sflow.TypeCounterSample, sflow.TypeExpandedCounterSample:
-				for _, rec := range sample.GetRecords() {
+			for _, sample := range dgram.Samples {
+				switch sample.SampleType() {
+				// We're only interested in counters (for now).
+				case sflow.TypeCounterSample, sflow.TypeExpandedCounterSample:
+					for _, rec := range sample.GetRecords() {
 
-					// Send the records through the pipeline
-					// using the source IP as a host key.
-					messages <- Message{
-						Source: ip.String(),
-						Record: rec,
+						// Send the records through the pipeline
+						// using the source IP as a host key.
+						messages <- Message{
+							Source: ip.String(),
+							Record: rec,
+						}
 					}
 				}
 			}
 		}
+	}()
+
+	// buf is a UDP payload.
+	for buf := range c {
+		datagramChan <- buf
 	}
 }
 

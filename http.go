@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 )
 
 type stats interface{}
@@ -37,7 +38,7 @@ type netStats struct {
 	PacketsOut float32 `json:"packetsOut"`
 }
 
-func ServeHostCpuStats(registry *HostRegistry) http.Handler {
+func ServeAllHostStats(registry *HostRegistry) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "*")
@@ -46,83 +47,59 @@ func ServeHostCpuStats(registry *HostRegistry) http.Handler {
 
 		hosts := registry.GetHosts()
 
-	HOST_LOOP:
 		for _, host := range hosts {
 
-			// These are the metrics we're interested in.
-			cpuMetrics := []string{
-				"cpu.user",
-				"cpu.sys",
-				"cpu.nice",
-				"cpu.wio",
-				"cpu.intr",
-				"cpu.softintr",
-				"cpu.idle",
+			statsMap := make(map[string]stats)
+			metricRegistry := registry.hosts[host]
+			for metric, metricState := range metricRegistry.metrics {
+				statsMap[metric] = metricState.Value()
 			}
 
-			// Get values. Some, or all, of these could be NaN.
-			metrics, err := registry.Query(host, cpuMetrics...)
-			if err != nil {
-				continue
-			}
-
-			var totalTime float32
-
-			for _, metric := range metrics {
-				// NaN != NaN according to the IEEE standard.
-				if metric != metric {
-					continue HOST_LOOP
-				}
-				totalTime += metric
-			}
-
-			// We want percentages.
-			totalTime /= 100
-
-			h := hostStats{
+			hostsSlice = append(hostsSlice, hostStats{
 				Name:  host,
-				Stats: make(map[string]stats),
-			}
-
-			h.Stats["cpu"] = cpuStats{
-				metrics[0] / totalTime,
-				metrics[1] / totalTime,
-				metrics[2] / totalTime,
-				metrics[3] / totalTime,
-				metrics[4] / totalTime,
-				metrics[5] / totalTime,
-				metrics[6] / totalTime,
-			}
-
-			metrics, err = registry.Query(host, "mem.total", "mem.free",
-				"mem.shared", "mem.buffers", "mem.cached")
-
-			if err == nil {
-				h.Stats["mem"] = memStats{
-					metrics[0],
-					metrics[1],
-					metrics[2],
-					metrics[3],
-					metrics[4],
-				}
-			}
-
-			metrics, err = registry.Query(host, "net.bytes_in", "net.packets_in",
-				"net.bytes_out", "net.packets_out")
-
-			if err == nil {
-				h.Stats["net"] = netStats{
-					metrics[0],
-					metrics[1],
-					metrics[2],
-					metrics[3],
-				}
-			}
-
-			hostsSlice = append(hostsSlice, h)
+				Stats: statsMap,
+			})
 		}
 
 		enc := json.NewEncoder(w)
 		enc.Encode(hostsSlice)
+	})
+}
+
+func ServeHostStats(registry *HostRegistry) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		host := strings.TrimLeft(r.URL.Path, "/")
+
+		if host == "" {
+			ServeAllHostStats(registry).ServeHTTP(w, r)
+			return
+		}
+
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "*")
+
+		statsMap := make(map[string]stats)
+		metricRegistry := registry.hosts[host]
+		for metric, metricState := range metricRegistry.metrics {
+			statsMap[metric] = metricState.Value()
+		}
+
+		enc := json.NewEncoder(w)
+		enc.Encode(hostStats{
+			Name:  host,
+			Stats: statsMap,
+		})
+	})
+}
+
+func ServeHostsList(registry *HostRegistry) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "*")
+
+		enc := json.NewEncoder(w)
+		enc.Encode(registry.GetHosts())
 	})
 }

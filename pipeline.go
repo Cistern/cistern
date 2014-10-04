@@ -44,8 +44,7 @@ func (b *BlackholeProcessor) SetInbound(inbound chan Message) {
 }
 
 func (b *BlackholeProcessor) Process() {
-	for m := range b.inbound {
-		fmt.Println("dumping message:", m)
+	for _ = range b.inbound {
 	}
 }
 
@@ -62,7 +61,7 @@ type HostProcessor struct {
 func NewHostProcessor(reg *HostRegistry) *HostProcessor {
 	return &HostProcessor{
 		reg:      reg,
-		outbound: make(chan Message),
+		outbound: make(chan Message, 100),
 	}
 }
 
@@ -136,10 +135,7 @@ func (h *HostProcessor) Process() {
 			h.reg.Insert(registryKey, "net.drops_out", TypeDerivative, n.DropsOut)
 
 		default:
-			select {
-			case h.outbound <- message:
-			default:
-			}
+			h.outbound <- message
 		}
 	}
 }
@@ -153,7 +149,7 @@ type GenericIfaceProcessor struct {
 func NewGenericIfaceProcessor(reg *HostRegistry) *GenericIfaceProcessor {
 	return &GenericIfaceProcessor{
 		reg:      reg,
-		outbound: make(chan Message),
+		outbound: make(chan Message, 100),
 	}
 }
 

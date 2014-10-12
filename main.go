@@ -1,13 +1,13 @@
 package main
 
 import (
+	"github.com/PreetamJinka/metricstore"
 	"github.com/PreetamJinka/sflow-go"
 	"github.com/PreetamJinka/udpchan"
 
 	"flag"
 	"fmt"
 	"log"
-	"net/http"
 	"time"
 )
 
@@ -39,10 +39,10 @@ func main() {
 	go p.Run(messages)
 	go flowPipeline.Run(flowMessages)
 
-	http.Handle("/", ServeHostStats(registry))
-	http.Handle("/hosts", ServeHostsList(registry))
+	s := metricstore.NewMetricStore("/opt/cistern/metric_data")
+	go SnapshotMetrics(s, registry, 5*time.Second, "/opt/cistern/metric_data")
 
-	go http.ListenAndServe(":8080", nil)
+	go RunHTTP(":8080", registry, s)
 
 	datagramChan := make(chan []byte)
 
@@ -80,8 +80,6 @@ func main() {
 			}
 		}
 	}()
-
-	go SnapshotMetrics(registry, 5*time.Second, "/opt/cistern/metric_data")
 
 	// buf is a UDP payload.
 	for buf := range c {

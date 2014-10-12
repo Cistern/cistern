@@ -1,9 +1,14 @@
 package main
 
 import (
+	"github.com/PreetamJinka/metricstore"
+	"github.com/PreetamJinka/siesta"
+
 	"encoding/json"
+	"log"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type stats interface{}
@@ -102,4 +107,42 @@ func ServeHostsList(registry *HostRegistry) http.Handler {
 		enc := json.NewEncoder(w)
 		enc.Encode(registry.GetHosts())
 	})
+}
+
+func ServeMetrics(store *metricstore.MetricStore) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		log.Println("foo")
+
+		var params siesta.Params
+
+		host := params.String("host", "", "")
+		metric := params.String("metric", "", "")
+		start := params.Int64("start", 0, "")
+		end := params.Int64("end", 9999999999999, "")
+
+		err := params.Parse(r.Form)
+
+		if err != nil {
+			panic(err)
+		}
+
+		startTime := time.Unix(*start, 0)
+		endTime := time.Unix(*end, 0)
+
+		points := store.Retrieve(*host, *metric, startTime, endTime)
+
+		enc := json.NewEncoder(w)
+		enc.Encode(points)
+	}
+}
+
+func RunHTTP(address string, registry *HostRegistry, store *metricstore.MetricStore) {
+	service := siesta.NewService("/")
+	service.Route("GET", "/", "", ServeHostsList(registry))
+	service.Route("GET", "/metrics/<host>/<metric>", "", ServeMetrics(store))
+	service.Route("GET", "/asdf", "", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Hi"))
+	})
+
+	http.ListenAndServe(address, service)
 }

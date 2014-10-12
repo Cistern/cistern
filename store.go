@@ -6,9 +6,7 @@ import (
 	"time"
 )
 
-func SnapshotMetrics(r *HostRegistry, interval time.Duration, baseDir string) {
-	s := metricstore.NewMetricStore(baseDir)
-
+func SnapshotMetrics(s *metricstore.MetricStore, r *HostRegistry, interval time.Duration, baseDir string) {
 	for now := range time.Tick(interval) {
 		for host, hostRegistry := range r.hosts {
 			for metric, metricState := range hostRegistry.metrics {

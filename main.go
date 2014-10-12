@@ -81,6 +81,8 @@ func main() {
 		}
 	}()
 
+	go SnapshotMetrics(registry, 5*time.Second, "/opt/cistern/metric_data")
+
 	// buf is a UDP payload.
 	for buf := range c {
 		datagramChan <- buf

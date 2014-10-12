@@ -1,13 +1,13 @@
 package main
 
 import (
+	"github.com/PreetamJinka/metricstore"
 	"github.com/PreetamJinka/sflow-go"
 	"github.com/PreetamJinka/udpchan"
 
 	"flag"
 	"fmt"
 	"log"
-	"net/http"
 	"time"
 )
 
@@ -25,15 +25,24 @@ func main() {
 
 	p := &Pipeline{}
 
+	flowPipeline := &Pipeline{}
+
 	p.Add(NewHostProcessor(registry))
 	p.Add(NewGenericIfaceProcessor(registry))
 
+	flowPipeline.Add(NewRawPacketProcessor(registry))
+
 	// Create a channel for pipeline messages.
 	messages := make(chan Message)
+	flowMessages := make(chan Message)
 	// Start the pipeline processes.
 	go p.Run(messages)
+	go flowPipeline.Run(flowMessages)
 
-	go http.ListenAndServe(":8080", ServeHostCpuStats(registry))
+	s := metricstore.NewMetricStore("/opt/cistern/metric_data")
+	go SnapshotMetrics(s, registry, 5*time.Second, "/opt/cistern/metric_data")
+
+	go RunHTTP(":8080", registry, s)
 
 	datagramChan := make(chan []byte)
 
@@ -52,6 +61,17 @@ func main() {
 						// Send the records through the pipeline
 						// using the source IP as a host key.
 						messages <- Message{
+							Source: ip.String(),
+							Record: rec,
+						}
+					}
+
+				case sflow.TypeFlowSample, sflow.TypeExpandedFlowSample:
+					for _, rec := range sample.GetRecords() {
+
+						// Send the records through the pipeline
+						// using the source IP as a host key.
+						flowMessages <- Message{
 							Source: ip.String(),
 							Record: rec,
 						}

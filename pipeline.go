@@ -170,19 +170,18 @@ func (p *GenericIfaceProcessor) Process() {
 		case sflow.TypeGenericIfaceCounter:
 			c := record.(sflow.GenericIfaceCounters)
 
-			p.reg.Insert(registryKey, fmt.Sprintf("if%d.octets_in", c.Index), TypeDerivative, c.InOctets)
-			p.reg.Insert(registryKey, fmt.Sprintf("if%d.ucast_packets_in", c.Index), TypeDerivative, c.InUcastPkts)
-			p.reg.Insert(registryKey, fmt.Sprintf("if%d.ucast_packets_in", c.Index), TypeDerivative, c.InUcastPkts)
-			p.reg.Insert(registryKey, fmt.Sprintf("if%d.multicast_packets_in", c.Index), TypeDerivative, c.InMulticastPkts)
-			p.reg.Insert(registryKey, fmt.Sprintf("if%d.broadcast_packets_in", c.Index), TypeDerivative, c.InBroadcastPkts)
-			p.reg.Insert(registryKey, fmt.Sprintf("if%d.discards_in", c.Index), TypeDerivative, c.InDiscards)
-			p.reg.Insert(registryKey, fmt.Sprintf("if%d.errors_in", c.Index), TypeDerivative, c.InErrors)
-			p.reg.Insert(registryKey, fmt.Sprintf("if%d.unknown_in", c.Index), TypeDerivative, c.InUnknownProtos)
-			p.reg.Insert(registryKey, fmt.Sprintf("if%d.octets_out", c.Index), TypeDerivative, c.OutOctets)
-			p.reg.Insert(registryKey, fmt.Sprintf("if%d.multicast_packets_out", c.Index), TypeDerivative, c.OutMulticastPkts)
-			p.reg.Insert(registryKey, fmt.Sprintf("if%d.broadcast_packets_out", c.Index), TypeDerivative, c.OutBroadcastPkts)
-			p.reg.Insert(registryKey, fmt.Sprintf("if%d.discards_out", c.Index), TypeDerivative, c.OutDiscards)
-			p.reg.Insert(registryKey, fmt.Sprintf("if%d.errors_out", c.Index), TypeDerivative, c.OutErrors)
+			p.reg.Insert(registryKey, fmt.Sprintf("if%d.%s", c.Index, "octets_in"), TypeDerivative, c.InOctets)
+			p.reg.Insert(registryKey, fmt.Sprintf("if%d.%s", c.Index, "unicast_packets_in"), TypeDerivative, c.InUcastPkts)
+			p.reg.Insert(registryKey, fmt.Sprintf("if%d.%s", c.Index, "multicast_packets_in"), TypeDerivative, c.InMulticastPkts)
+			p.reg.Insert(registryKey, fmt.Sprintf("if%d.%s", c.Index, "broadcast_packets_in"), TypeDerivative, c.InBroadcastPkts)
+			p.reg.Insert(registryKey, fmt.Sprintf("if%d.%s", c.Index, "errors_in"), TypeDerivative, c.InErrors)
+			p.reg.Insert(registryKey, fmt.Sprintf("if%d.%s", c.Index, "unknown_proto_in"), TypeDerivative, c.InUnknownProtos)
+
+			p.reg.Insert(registryKey, fmt.Sprintf("if%d.%s", c.Index, "octets_out"), TypeDerivative, c.OutOctets)
+			p.reg.Insert(registryKey, fmt.Sprintf("if%d.%s", c.Index, "unicast_packets_out"), TypeDerivative, c.OutUcastPkts)
+			p.reg.Insert(registryKey, fmt.Sprintf("if%d.%s", c.Index, "multicast_packets_out"), TypeDerivative, c.OutMulticastPkts)
+			p.reg.Insert(registryKey, fmt.Sprintf("if%d.%s", c.Index, "broadcast_packets_out"), TypeDerivative, c.OutBroadcastPkts)
+			p.reg.Insert(registryKey, fmt.Sprintf("if%d.%s", c.Index, "errors_out"), TypeDerivative, c.OutErrors)
 
 		default:
 			select {

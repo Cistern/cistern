@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/PreetamJinka/metricstore"
 	"github.com/PreetamJinka/siesta"
 
+	"database/sql"
 	"encoding/json"
-	"log"
+	"math"
 	"net/http"
 	"strings"
 	"time"
@@ -109,16 +109,14 @@ func ServeHostsList(registry *HostRegistry) http.Handler {
 	})
 }
 
-func ServeMetrics(store *metricstore.MetricStore) func(http.ResponseWriter, *http.Request) {
+func ServeMetrics(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Println("foo")
-
 		var params siesta.Params
 
 		host := params.String("host", "", "")
 		metric := params.String("metric", "", "")
 		start := params.Int64("start", 0, "")
-		end := params.Int64("end", 9999999999999, "")
+		end := params.Int64("end", math.MaxInt64, "")
 
 		err := params.Parse(r.Form)
 
@@ -126,23 +124,101 @@ func ServeMetrics(store *metricstore.MetricStore) func(http.ResponseWriter, *htt
 			panic(err)
 		}
 
-		startTime := time.Unix(*start, 0)
-		endTime := time.Unix(*end, 0)
+		type point struct {
+			Ts    time.Time `json:"ts"`
+			Value float32   `json:"value"`
+		}
 
-		points := store.Retrieve(*host, *metric, startTime, endTime)
+		points := []point{}
+
+		rows, err := db.Query(`SELECT ts, value FROM metricdata WHERE host = ?
+				AND metric = ? AND ts BETWEEN ? AND ?`, *host, *metric, *start, *end)
+
+		if err != nil {
+			panic(err)
+		}
+
+		defer rows.Close()
+
+		for rows.Next() {
+			p := point{}
+			t := int64(0)
+			rows.Scan(&t, &p.Value)
+
+			p.Ts = time.Unix(t, 0)
+
+			points = append(points, p)
+		}
 
 		enc := json.NewEncoder(w)
 		enc.Encode(points)
 	}
 }
 
-func RunHTTP(address string, registry *HostRegistry, store *metricstore.MetricStore) {
+func ListHosts(db *sql.DB) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		rows, err := db.Query("SELECT DISTINCT host FROM metricdata")
+		if err != nil {
+			panic(err)
+		}
+		defer rows.Close()
+
+		hosts := []string{}
+		for rows.Next() {
+			var host string
+			err = rows.Scan(&host)
+			if err == nil {
+				hosts = append(hosts, host)
+			}
+		}
+
+		enc := json.NewEncoder(w)
+		enc.Encode(hosts)
+	}
+}
+
+func ListMetrics(db *sql.DB) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		var params siesta.Params
+		host := params.String("host", "", "")
+		err := params.Parse(r.Form)
+
+		if err != nil {
+			panic(err)
+		}
+
+		rows, err := db.Query("SELECT DISTINCT metric FROM metricdata WHERE host = ?", *host)
+		if err != nil {
+			panic(err)
+		}
+		defer rows.Close()
+
+		metrics := []string{}
+		for rows.Next() {
+			var metric string
+			err = rows.Scan(&metric)
+			if err == nil {
+				metrics = append(metrics, metric)
+			}
+		}
+
+		enc := json.NewEncoder(w)
+		enc.Encode(metrics)
+	}
+}
+
+func RunHTTP(address string, registry *HostRegistry, db *sql.DB) {
 	service := siesta.NewService("/")
-	service.Route("GET", "/", "", ServeHostsList(registry))
-	service.Route("GET", "/metrics/<host>/<metric>", "", ServeMetrics(store))
-	service.Route("GET", "/asdf", "", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hi"))
+	service.AddPre(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "*")
 	})
+
+	service.Route("GET", "/", "", ServeHostsList(registry))
+	service.Route("GET", "/metrics/<host>/<metric>", "", ServeMetrics(db))
+	service.Route("GET", "/metrics/listhosts", "", ListHosts(db))
+	service.Route("GET", "/metrics/listmetrics", "", ListMetrics(db))
 
 	http.ListenAndServe(address, service)
 }

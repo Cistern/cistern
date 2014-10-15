@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/PreetamJinka/metricstore"
 	"github.com/PreetamJinka/sflow-go"
 	"github.com/PreetamJinka/udpchan"
+	_ "github.com/mattn/go-sqlite3"
 
+	"database/sql"
 	"flag"
 	"fmt"
 	"log"
@@ -39,10 +40,14 @@ func main() {
 	go p.Run(messages)
 	go flowPipeline.Run(flowMessages)
 
-	s := metricstore.NewMetricStore("/opt/cistern/metric_data")
-	go SnapshotMetrics(s, registry, 5*time.Second, "/opt/cistern/metric_data")
+	db, err := sql.Open("sqlite3", "/opt/cistern/metrics.db")
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	go RunHTTP(":8080", registry, s)
+	go SnapshotMetrics(db, registry, time.Minute)
+
+	go RunHTTP(":8080", registry, db)
 
 	datagramChan := make(chan []byte)
 

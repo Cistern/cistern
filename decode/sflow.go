@@ -2,7 +2,6 @@ package decode
 
 import (
 	"github.com/PreetamJinka/sflow"
-	"github.com/VividCortex/trace"
 )
 
 type SflowDecoder struct {
@@ -28,8 +27,9 @@ func (d *SflowDecoder) Outbound() chan sflow.Datagram {
 }
 
 func (d *SflowDecoder) Run() {
-	for buf := range d.inbound {
-		trace.Tracef("received sFlow datagram of length %d", len(buf))
-		d.outbound <- sflow.Decode(buf)
-	}
+	go func() {
+		for buf := range d.inbound {
+			d.outbound <- sflow.Decode(buf)
+		}
+	}()
 }

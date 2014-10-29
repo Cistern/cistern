@@ -3,34 +3,23 @@ package main
 import (
 	"flag"
 	"log"
-	"os"
+
+	"github.com/PreetamJinka/udpchan"
 
 	"github.com/PreetamJinka/cistern/decode"
-	"github.com/PreetamJinka/udpchan"
-	"github.com/VividCortex/trace"
+	"github.com/PreetamJinka/cistern/pipeline"
+	"github.com/PreetamJinka/cistern/state/metrics"
 )
 
 var (
 	sflowListenAddr = ":6343"
-
-	traceEnabled = false
 )
 
 func main() {
 	log.Printf("Cistern version %s starting", version)
 
 	flag.StringVar(&sflowListenAddr, "sflow-listen-addr", sflowListenAddr, "listen address for sFlow datagrams")
-	flag.BoolVar(&traceEnabled, "trace", traceEnabled, "enable trace output")
 	flag.Parse()
-
-	if traceEnabled {
-		trace.SetWriter(os.Stderr)
-		trace.Enable()
-		log.Println("tracing is enabled")
-	} else {
-		trace.Disable()
-		log.Println("tracing is disabled")
-	}
 
 	// start listening
 	c, listenErr := udpchan.Listen(sflowListenAddr, nil)
@@ -42,7 +31,31 @@ func main() {
 
 	// start a decoder
 	sflowDecoder := decode.NewSflowDecoder(c, 16)
-	go sflowDecoder.Run()
+	sflowDecoder.Run()
+
+	hostRegistry := metrics.NewHostRegistry()
+
+	processingPipeline := &pipeline.Pipeline{}
+	processingPipeline.Add(pipeline.NewHostProcessor(hostRegistry))
+	processingPipeline.Add(pipeline.NewGenericIfaceProcessor(hostRegistry))
+
+	pipelineMessages := make(chan pipeline.Message, 16)
+	// TODO: refactor this part out
+	go func() {
+		for datagram := range sflowDecoder.Outbound() {
+			source := datagram.Header.IpAddress.String()
+
+			for _, sample := range datagram.Samples {
+				for _, record := range sample.GetRecords() {
+					pipelineMessages <- pipeline.Message{
+						Source: source,
+						Record: record,
+					}
+				}
+			}
+		}
+	}()
+	processingPipeline.Run(pipelineMessages)
 
 	// make sure we don't exit
 	<-make(chan struct{})

@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"errors"
-	"time"
 )
 
 type MetricType byte

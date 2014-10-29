@@ -34,8 +34,8 @@ func (p *GenericIfaceProcessor) Process() {
 		record := message.Record
 		registryKey := message.Source
 
-		switch record.RecordType() {
-		case sflow.TypeGenericIfaceCounter:
+		switch record.(type) {
+		case sflow.GenericIfaceCounters:
 			c := record.(sflow.GenericIfaceCounters)
 
 			p.reg.Insert(registryKey, fmt.Sprintf("if%d.%s", c.Index, "octets_in"), metrics.TypeDerivative, c.InOctets)

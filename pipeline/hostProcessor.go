@@ -32,8 +32,8 @@ func (h *HostProcessor) Process() {
 		record := message.Record
 		registryKey := message.Source
 
-		switch record.RecordType() {
-		case sflow.TypeHostCpuCounter:
+		switch record.(type) {
+		case sflow.HostCpuCounters:
 			c := record.(sflow.HostCpuCounters)
 
 			h.reg.Insert(registryKey, "cpu.user", metrics.TypeDerivative, c.CpuUser)
@@ -44,7 +44,7 @@ func (h *HostProcessor) Process() {
 			h.reg.Insert(registryKey, "cpu.intr", metrics.TypeDerivative, c.CpuIntr)
 			h.reg.Insert(registryKey, "cpu.softintr", metrics.TypeDerivative, c.CpuSoftIntr)
 
-		case sflow.TypeHostMemoryCounter:
+		case sflow.HostMemoryCounters:
 			m := record.(sflow.HostMemoryCounters)
 
 			h.reg.Insert(registryKey, "mem.total", metrics.TypeGauge, m.Total)
@@ -60,7 +60,7 @@ func (h *HostProcessor) Process() {
 			h.reg.Insert(registryKey, "mem.swap_in", metrics.TypeDerivative, m.SwapIn)
 			h.reg.Insert(registryKey, "mem.swap_out", metrics.TypeDerivative, m.SwapOut)
 
-		case sflow.TypeHostDiskCounter:
+		case sflow.HostDiskCounters:
 			d := record.(sflow.HostDiskCounters)
 
 			h.reg.Insert(registryKey, "disk.total", metrics.TypeGauge, d.Total)
@@ -75,7 +75,7 @@ func (h *HostProcessor) Process() {
 			h.reg.Insert(registryKey, "disk.bytes_written", metrics.TypeDerivative, d.BytesWritten)
 			h.reg.Insert(registryKey, "disk.write_time", metrics.TypeDerivative, d.WriteTime)
 
-		case sflow.TypeHostNetCounter:
+		case sflow.HostNetCounters:
 			n := record.(sflow.HostNetCounters)
 
 			h.reg.Insert(registryKey, "net.bytes_in", metrics.TypeDerivative, n.BytesIn)

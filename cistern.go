@@ -38,6 +38,7 @@ func main() {
 	processingPipeline := &pipeline.Pipeline{}
 	processingPipeline.Add(pipeline.NewHostProcessor(hostRegistry))
 	processingPipeline.Add(pipeline.NewGenericIfaceProcessor(hostRegistry))
+	processingPipeline.Add(pipeline.NewRawPacketProcessor(hostRegistry))
 
 	pipelineMessages := make(chan pipeline.Message, 16)
 	// TODO: refactor this part out
@@ -56,6 +57,8 @@ func main() {
 		}
 	}()
 	processingPipeline.Run(pipelineMessages)
+
+	go LogDiagnostics(hostRegistry)
 
 	// make sure we don't exit
 	<-make(chan struct{})

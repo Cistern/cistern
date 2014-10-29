@@ -7,4 +7,4 @@ Cistern collects and aggregates sFlow datagrams.
 
 License
 ---
-MIT
+BSD (see LICENSE)

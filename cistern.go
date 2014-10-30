@@ -6,6 +6,7 @@ import (
 
 	"github.com/PreetamJinka/udpchan"
 
+	"github.com/PreetamJinka/cistern/api"
 	"github.com/PreetamJinka/cistern/decode"
 	"github.com/PreetamJinka/cistern/pipeline"
 	"github.com/PreetamJinka/cistern/state/metrics"
@@ -13,12 +14,14 @@ import (
 
 var (
 	sflowListenAddr = ":6343"
+	apiListenAddr   = ":8080"
 )
 
 func main() {
 	log.Printf("Cistern version %s starting", version)
 
 	flag.StringVar(&sflowListenAddr, "sflow-listen-addr", sflowListenAddr, "listen address for sFlow datagrams")
+	flag.StringVar(&apiListenAddr, "api-listen-addr", apiListenAddr, "listen address for HTTP API server")
 	flag.Parse()
 
 	// start listening
@@ -59,6 +62,10 @@ func main() {
 	processingPipeline.Run(pipelineMessages)
 
 	go LogDiagnostics(hostRegistry)
+
+	api := api.NewApiServer(apiListenAddr, hostRegistry)
+	api.Run()
+	log.Printf("started API server listening on %s", apiListenAddr)
 
 	// make sure we don't exit
 	<-make(chan struct{})

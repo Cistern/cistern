@@ -36,21 +36,29 @@ func main() {
 	}
 
 	for _, device := range conf.SNMPDevices {
-		session, err := snmp.NewSession(device.Address, device.User, device.AuthPassphrase, device.PrivPassphrase)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
 
-		session.Discover()
-		resp := session.Get([]byte{0x2b, 0x06, 0x01, 0x02, 0x01, 0x01, 0x01, 0x00})
-		if resp == nil {
-			log.Printf("[SNMP] Discovery failed for %s", device.Address)
-			continue
-		}
-		deviceDesc := string(resp.(snmp.Sequence)[2].(snmp.GetResponse)[3].(snmp.Sequence)[0].(snmp.Sequence)[1].(snmp.String))
+		go func(dev config.SNMPEntry) {
+			session, err := snmp.NewSession(dev.Address, dev.User, dev.AuthPassphrase, dev.PrivPassphrase)
+			if err != nil {
+				log.Println(err)
+				return
+			}
 
-		log.Printf("[SNMP] Discovery\n at %s:\n  %s", device.Address, deviceDesc)
+			err = session.Discover()
+			if err != nil {
+				log.Printf("[SNMP] Discovery failed for %s", dev.Address)
+				return
+			}
+
+			resp, err := session.Get([]byte{0x2b, 0x06, 0x01, 0x02, 0x01, 0x01, 0x01, 0x00})
+			if err != nil {
+				log.Printf("[SNMP] Discovery failed for %s", dev.Address)
+				return
+			}
+			deviceDesc := string(resp.(snmp.Sequence)[2].(snmp.GetResponse)[3].(snmp.Sequence)[0].(snmp.Sequence)[1].(snmp.String))
+
+			log.Printf("[SNMP] Discovery\n at %s:\n  %s", dev.Address, deviceDesc)
+		}(device)
 	}
 
 	// start listening

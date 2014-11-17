@@ -57,7 +57,6 @@ func NewSession(address, user, authPassphrase, privPassphrase string) (*Session,
 }
 
 func (s *Session) doRequest(data []byte, reqId int, c chan DataType) error {
-	log.Println("doRequest", reqId)
 	_, err := s.conn.WriteTo(data, s.addr)
 	if err != nil {
 		return err
@@ -65,7 +64,7 @@ func (s *Session) doRequest(data []byte, reqId int, c chan DataType) error {
 
 	s.inflight[reqId] = c
 	go func() {
-		<-time.After(100 * time.Millisecond)
+		<-time.After(500 * time.Millisecond)
 		s.lock.Lock()
 		defer s.lock.Unlock()
 
@@ -89,7 +88,10 @@ func (s *Session) handleListen() {
 			continue
 		}
 
-		decoded, _ := Decode(bytes.NewReader(b[:n]))
+		decoded, _, err := Decode(bytes.NewReader(b[:n]))
+		if err != nil {
+			continue
+		}
 
 		s.lock.Lock()
 		reqId := int(decoded.(Sequence)[1].(Sequence)[0].(Int))
@@ -97,15 +99,31 @@ func (s *Session) handleListen() {
 		switch decoded.(Sequence)[3].(type) {
 		case String:
 			encrypted := []byte(decoded.(Sequence)[3].(String))
-			engineStuff, _ := Decode(bytes.NewReader([]byte(decoded.(Sequence)[2].(String))))
+			engineStuff, _, err := Decode(bytes.NewReader([]byte(decoded.(Sequence)[2].(String))))
+			if err != nil {
+				continue
+			}
 
 			s.engineBoots = int32(engineStuff.(Sequence)[1].(Int))
 			s.engineTime = int32(engineStuff.(Sequence)[2].(Int))
 
 			priv := []byte(engineStuff.(Sequence)[5].(String))
 
-			result, _ := Decode(bytes.NewReader(s.decrypt(encrypted, priv)))
-			reqId = int(result.(Sequence)[2].(GetResponse)[0].(Int))
+			result, _, err := Decode(bytes.NewReader(s.decrypt(encrypted, priv)))
+
+			if err != nil {
+				continue
+			}
+
+			responseData := result.(Sequence)[2]
+
+			switch responseData.(type) {
+			case GetResponse:
+				reqId = int(responseData.(GetResponse)[0].(Int))
+
+			case Report:
+				reqId = int(responseData.(Report)[0].(Int))
+			}
 		}
 
 		if c, ok := s.inflight[reqId]; ok {
@@ -120,7 +138,20 @@ func (s *Session) handleListen() {
 func (s *Session) Discover() error {
 	reqId := int(rand.Intn(100000))
 
-	discoverySequence := Sequence{
+	encodedEngineData, err := Sequence{
+		String(""),
+		Int(0),
+		Int(0),
+		String(""),
+		String(""),
+		String(""),
+	}.Encode()
+
+	if err != nil {
+		return err
+	}
+
+	discoverySequence, err := Sequence{
 		Int(3),
 		Sequence{
 			Int(reqId),
@@ -128,14 +159,7 @@ func (s *Session) Discover() error {
 			String("\x04"),
 			Int(3),
 		},
-		String(Sequence{
-			String(""),
-			Int(0),
-			Int(0),
-			String(""),
-			String(""),
-			String(""),
-		}.Encode()),
+		String(encodedEngineData),
 		Sequence{
 			String(""),
 			String(""),
@@ -148,21 +172,31 @@ func (s *Session) Discover() error {
 		},
 	}.Encode()
 
-	c := make(chan DataType)
-	err := s.doRequest(discoverySequence, reqId, c)
-
 	if err != nil {
 		return err
 	}
 
-	decoded, ok := <-c
-	if !ok {
-		return errors.New("discovery failed")
+	var decoded DataType
+	var ok bool
+
+	for i := 0; i < 3; i++ {
+		c := make(chan DataType)
+		s.doRequest(discoverySequence, int(reqId), c)
+
+		decoded, ok = <-c
+		if ok {
+			break
+		} else {
+			if i == 2 {
+				return errors.New("discovery failed")
+			}
+		}
 	}
 
-	log.Printf("Request ID: %#+v", decoded.(Sequence)[1].(Sequence)[0].(Int))
-
-	engineStuff, _ := Decode(bytes.NewReader([]byte(decoded.(Sequence)[2].(String))))
+	engineStuff, _, err := Decode(bytes.NewReader([]byte(decoded.(Sequence)[2].(String))))
+	if err != nil {
+		return err
+	}
 
 	s.engineID = []byte(engineStuff.(Sequence)[0].(String))
 	s.engineBoots = int32(engineStuff.(Sequence)[1].(Int))
@@ -174,10 +208,10 @@ func (s *Session) Discover() error {
 	return nil
 }
 
-func (s *Session) Get(oid []byte) interface{} {
+func (s *Session) Get(oid []byte) (interface{}, error) {
 	reqId := Int(rand.Int31())
 
-	getReq := Sequence{
+	getReq, err := Sequence{
 		String(s.engineID),
 		String(""),
 		GetRequest{
@@ -193,34 +227,54 @@ func (s *Session) Get(oid []byte) interface{} {
 		},
 	}.Encode()
 
+	if err != nil {
+		return nil, err
+	}
+
 	encrypted, priv := s.encrypt(getReq)
 
-	packet := s.constructPacket(encrypted, priv)
+	packet, err := s.constructPacket(encrypted, priv)
+	if err != nil {
+		return nil, err
+	}
 
-	c := make(chan DataType)
-	s.doRequest(packet, int(reqId), c)
+	var decoded DataType
+	var ok bool
 
-	decoded, ok := <-c
-	if !ok {
-		return nil
+	for i := 0; i < 3; i++ {
+		c := make(chan DataType)
+		s.doRequest(packet, int(reqId), c)
+
+		decoded, ok = <-c
+		if ok {
+			break
+		} else {
+			if i == 2 {
+				return nil, errors.New("timeout")
+			}
+		}
 	}
 
 	encrypted = []byte(decoded.(Sequence)[3].(String))
-	engineStuff, _ := Decode(bytes.NewReader([]byte(decoded.(Sequence)[2].(String))))
+	engineStuff, _, err := Decode(bytes.NewReader([]byte(decoded.(Sequence)[2].(String))))
+
+	if err != nil {
+		return nil, err
+	}
 
 	s.engineBoots = int32(engineStuff.(Sequence)[1].(Int))
 	s.engineTime = int32(engineStuff.(Sequence)[2].(Int))
 
 	priv = []byte(engineStuff.(Sequence)[5].(String))
 
-	result, _ := Decode(bytes.NewReader(s.decrypt(encrypted, priv)))
-	return result
+	result, _, err := Decode(bytes.NewReader(s.decrypt(encrypted, priv)))
+	return result, err
 }
 
-func (s *Session) GetNext(oid []byte) interface{} {
+func (s *Session) GetNext(oid []byte) (interface{}, error) {
 	reqId := Int(rand.Int31())
 
-	getNextReq := Sequence{
+	getNextReq, err := Sequence{
 		String(s.engineID),
 		String(""),
 		GetNextRequest{
@@ -236,9 +290,16 @@ func (s *Session) GetNext(oid []byte) interface{} {
 		},
 	}.Encode()
 
+	if err != nil {
+		return nil, err
+	}
+
 	encrypted, priv := s.encrypt(getNextReq)
 
-	packet := s.constructPacket(encrypted, priv)
+	packet, err := s.constructPacket(encrypted, priv)
+	if err != nil {
+		return nil, err
+	}
 
 	s.conn.WriteTo(packet, s.addr)
 
@@ -248,24 +309,30 @@ func (s *Session) GetNext(oid []byte) interface{} {
 		log.Fatal(err)
 	}
 
-	decoded, _ := Decode(bytes.NewReader(b[:n]))
+	decoded, _, err := Decode(bytes.NewReader(b[:n]))
+	if err != nil {
+		return nil, err
+	}
 
 	encrypted = []byte(decoded.(Sequence)[3].(String))
-	engineStuff, _ := Decode(bytes.NewReader([]byte(decoded.(Sequence)[2].(String))))
+	engineStuff, _, err := Decode(bytes.NewReader([]byte(decoded.(Sequence)[2].(String))))
+	if err != nil {
+		return nil, err
+	}
 
 	s.engineBoots = int32(engineStuff.(Sequence)[1].(Int))
 	s.engineTime = int32(engineStuff.(Sequence)[2].(Int))
 
 	priv = []byte(engineStuff.(Sequence)[5].(String))
 
-	result, _ := Decode(bytes.NewReader(s.decrypt(encrypted, priv)))
-	return result
+	result, _, err := Decode(bytes.NewReader(s.decrypt(encrypted, priv)))
+	return result, err
 }
 
-func (s *Session) constructPacket(encrypted, priv []byte) []byte {
+func (s *Session) constructPacket(encrypted, priv []byte) ([]byte, error) {
 	msgId := Int(rand.Int31())
 
-	v3Header := Sequence{
+	v3Header, err := Sequence{
 		String(s.engineID),
 		Int(s.engineBoots),
 		Int(s.engineTime),
@@ -274,7 +341,11 @@ func (s *Session) constructPacket(encrypted, priv []byte) []byte {
 		String(priv),
 	}.Encode()
 
-	packet := Sequence{
+	if err != nil {
+		return nil, err
+	}
+
+	packet, err := Sequence{
 		Int(3),
 		Sequence{
 			msgId,
@@ -286,9 +357,13 @@ func (s *Session) constructPacket(encrypted, priv []byte) []byte {
 		String(encrypted),
 	}.Encode()
 
+	if err != nil {
+		return nil, err
+	}
+
 	authParam := s.auth(packet)
 
-	return bytes.Replace(packet, bytes.Repeat([]byte{0}, 12), authParam, 1)
+	return bytes.Replace(packet, bytes.Repeat([]byte{0}, 12), authParam, 1), nil
 }
 
 func (s *Session) Close() error {

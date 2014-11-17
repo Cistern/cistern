@@ -6,10 +6,10 @@ import (
 )
 
 type Configuration struct {
-	SNMPDevices []snmpEntry `json:"snmpDevices"`
+	SNMPDevices []SNMPEntry `json:"snmpDevices"`
 }
 
-type snmpEntry struct {
+type SNMPEntry struct {
 	Address        string `json:"address"`
 	User           string `json:"user"`
 	AuthPassphrase string `json:"authPassphrase"`

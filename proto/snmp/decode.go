@@ -2,16 +2,21 @@ package snmp
 
 import (
 	"encoding/asn1"
+	"errors"
 	"io"
 )
 
-func Decode(r io.Reader) (DataType, int) {
+func Decode(r io.Reader) (DataType, int, error) {
 	bytesRead := 0
 
 	typeLength := []byte{0, 0}
-	n, _ := r.Read(typeLength)
+	n, err := r.Read(typeLength)
 
 	bytesRead += n
+
+	if err != nil {
+		return nil, bytesRead, err
+	}
 
 	t := typeLength[0]
 	length := int(typeLength[1])
@@ -22,7 +27,14 @@ func Decode(r io.Reader) (DataType, int) {
 		for lengthNumBytes > 0 {
 			length = length << 8
 			var b [1]byte
-			r.Read(b[:])
+			n, err := r.Read(b[:])
+
+			bytesRead += n
+
+			if err != nil {
+				return nil, bytesRead, err
+			}
+
 			length |= int(b[0])
 
 			lengthNumBytes--
@@ -35,31 +47,36 @@ func Decode(r io.Reader) (DataType, int) {
 		seqBytes := 0
 
 		for seqBytes < length {
-			item, read := Decode(r)
+			item, read, err := Decode(r)
 			if read > 0 && item != nil {
 				seq = append(seq, item)
 				bytesRead += read
 				seqBytes += read
-			} else {
-				break
+			}
+
+			if err != nil {
+				return nil, bytesRead, err
 			}
 		}
 
-		return seq, bytesRead
+		return seq, bytesRead, nil
 	}
 
 	if t == 0x02 || t == 0x41 {
 		intBytes := make([]byte, int(length))
-		n, _ := r.Read(intBytes)
+		n, err := r.Read(intBytes)
+		bytesRead += n
+
+		if err != nil {
+			return nil, bytesRead, err
+		}
 
 		intBytes = append([]byte{0x02, byte(length)}, intBytes...)
-
-		bytesRead += n
 
 		i := 0
 		asn1.Unmarshal(intBytes, &i)
 
-		return Int(i), bytesRead
+		return Int(i), bytesRead, nil
 	}
 
 	if t == 0x04 {
@@ -68,7 +85,11 @@ func Decode(r io.Reader) (DataType, int) {
 		n, _ := r.Read(str)
 		bytesRead += n
 
-		return String(str), bytesRead
+		if err != nil {
+			return nil, bytesRead, err
+		}
+
+		return String(str), bytesRead, nil
 	}
 
 	if t == 0xa2 {
@@ -77,17 +98,19 @@ func Decode(r io.Reader) (DataType, int) {
 		seqBytes := 0
 
 		for seqBytes < length {
-			item, read := Decode(r)
+			item, read, err := Decode(r)
 			if read > 0 && item != nil {
 				res = append(res, item)
 				bytesRead += read
 				seqBytes += read
-			} else {
-				break
+			}
+
+			if err != nil {
+				return nil, bytesRead, err
 			}
 		}
 
-		return res, bytesRead
+		return res, bytesRead, nil
 	}
 
 	if t == 0xa8 {
@@ -96,27 +119,33 @@ func Decode(r io.Reader) (DataType, int) {
 		seqBytes := 0
 
 		for seqBytes < length {
-			item, read := Decode(r)
+			item, read, err := Decode(r)
 			if read > 0 && item != nil {
 				res = append(res, item)
 				bytesRead += read
 				seqBytes += read
-			} else {
-				break
+			}
+
+			if err != nil {
+				return nil, bytesRead, err
 			}
 		}
 
-		return res, bytesRead
+		return res, bytesRead, nil
 	}
 
 	if t == 0x06 {
 
 		oid := make(ObjectIdentifier, length)
-		n, _ := r.Read(oid)
+		n, err := r.Read(oid)
 		bytesRead += n
 
-		return oid, bytesRead
+		if err != nil {
+			return nil, bytesRead, err
+		}
+
+		return oid, bytesRead, nil
 	}
 
-	return nil, bytesRead
+	return nil, bytesRead, errors.New("unknown type")
 }

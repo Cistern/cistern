@@ -1,7 +1,7 @@
 package decode
 
 import (
-	"github.com/PreetamJinka/cistern/proto/sflow"
+	"github.com/PreetamJinka/cistern/net/sflow"
 )
 
 type SflowDecoder struct {

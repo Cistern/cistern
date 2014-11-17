@@ -9,8 +9,8 @@ import (
 	"github.com/PreetamJinka/cistern/api"
 	"github.com/PreetamJinka/cistern/config"
 	"github.com/PreetamJinka/cistern/decode"
+	"github.com/PreetamJinka/cistern/net/snmp"
 	"github.com/PreetamJinka/cistern/pipeline"
-	"github.com/PreetamJinka/cistern/proto/snmp"
 	"github.com/PreetamJinka/cistern/state/metrics"
 )
 

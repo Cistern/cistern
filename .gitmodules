@@ -1,0 +1,3 @@
+[submodule "proto/sflow"]
+	path = proto/sflow
+	url = git://github.com/PreetamJinka/sflow.git

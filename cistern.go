@@ -7,22 +7,59 @@ import (
 	"github.com/PreetamJinka/udpchan"
 
 	"github.com/PreetamJinka/cistern/api"
+	"github.com/PreetamJinka/cistern/config"
 	"github.com/PreetamJinka/cistern/decode"
 	"github.com/PreetamJinka/cistern/pipeline"
+	"github.com/PreetamJinka/cistern/proto/snmp"
 	"github.com/PreetamJinka/cistern/state/metrics"
 )
 
 var (
 	sflowListenAddr = ":6343"
 	apiListenAddr   = ":8080"
+	configFile      = "/opt/cistern/config.json"
 )
 
 func main() {
-	log.Printf("Cistern version %s starting", version)
-
 	flag.StringVar(&sflowListenAddr, "sflow-listen-addr", sflowListenAddr, "listen address for sFlow datagrams")
 	flag.StringVar(&apiListenAddr, "api-listen-addr", apiListenAddr, "listen address for HTTP API server")
+	flag.StringVar(&configFile, "config", configFile, "configuration file")
 	flag.Parse()
+
+	log.Printf("Cistern version %s starting", version)
+
+	log.Printf("Loading configuration file at %s", configFile)
+
+	conf, err := config.Load(configFile)
+	if err != nil {
+		log.Print(err)
+	}
+
+	for _, device := range conf.SNMPDevices {
+
+		go func(dev config.SNMPEntry) {
+			session, err := snmp.NewSession(dev.Address, dev.User, dev.AuthPassphrase, dev.PrivPassphrase)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+
+			err = session.Discover()
+			if err != nil {
+				log.Printf("[SNMP] Discovery failed for %s", dev.Address)
+				return
+			}
+
+			resp, err := session.Get([]byte{0x2b, 0x06, 0x01, 0x02, 0x01, 0x01, 0x01, 0x00})
+			if err != nil {
+				log.Printf("[SNMP] Discovery failed for %s", dev.Address)
+				return
+			}
+			deviceDesc := string(resp.(snmp.Sequence)[2].(snmp.GetResponse)[3].(snmp.Sequence)[0].(snmp.Sequence)[1].(snmp.String))
+
+			log.Printf("[SNMP] Discovery\n at %s:\n  %s", dev.Address, deviceDesc)
+		}(device)
+	}
 
 	// start listening
 	c, listenErr := udpchan.Listen(sflowListenAddr, nil)

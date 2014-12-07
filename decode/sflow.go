@@ -2,6 +2,9 @@ package decode
 
 import (
 	"github.com/PreetamJinka/cistern/net/sflow"
+
+	"bytes"
+	"log"
 )
 
 type SflowDecoder struct {
@@ -27,9 +30,20 @@ func (d *SflowDecoder) Outbound() chan sflow.Datagram {
 }
 
 func (d *SflowDecoder) Run() {
+	decoder := sflow.NewDecoder(nil)
 	go func() {
 		for buf := range d.inbound {
-			d.outbound <- sflow.Decode(buf)
+			r := bytes.NewReader(buf)
+
+			decoder.Use(r)
+
+			dgram, err := decoder.Decode()
+			log.Println(dgram, err)
+			if err == nil {
+				d.outbound <- *dgram
+			} else {
+				log.Println(err)
+			}
 		}
 	}()
 }

@@ -1,3 +1,6 @@
 [submodule "proto/sflow"]
 	path = net/sflow
 	url = git://github.com/PreetamJinka/sflow.git
+[submodule "net/proto"]
+	path = net/proto
+	url = git@github.com:PreetamJinka/proto.git

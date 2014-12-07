@@ -3,40 +3,40 @@ package pipeline
 import (
 	"fmt"
 
-	"github.com/PreetamJinka/sflow"
-
+	"github.com/PreetamJinka/cistern/net/sflow"
 	"github.com/PreetamJinka/cistern/state/metrics"
 )
 
-type GenericIfaceProcessor struct {
+type GenericInterfaceCountersProcessor struct {
 	reg      *metrics.HostRegistry
 	inbound  chan Message
 	outbound chan Message
 }
 
-func NewGenericIfaceProcessor(reg *metrics.HostRegistry) *GenericIfaceProcessor {
-	return &GenericIfaceProcessor{
+func NewGenericInterfaceCountersProcessor(reg *metrics.HostRegistry) *GenericInterfaceCountersProcessor {
+	return &GenericInterfaceCountersProcessor{
 		reg:      reg,
 		outbound: make(chan Message, 4),
 	}
 }
 
-func (p *GenericIfaceProcessor) SetInbound(inbound chan Message) {
+func (p *GenericInterfaceCountersProcessor) SetInbound(inbound chan Message) {
 	p.inbound = inbound
 }
 
-func (p *GenericIfaceProcessor) Outbound() chan Message {
+func (p *GenericInterfaceCountersProcessor) Outbound() chan Message {
 	return p.outbound
 }
 
-func (p *GenericIfaceProcessor) Process() {
+func (p *GenericInterfaceCountersProcessor) Process() {
 	for message := range p.inbound {
+
 		record := message.Record
 		registryKey := message.Source
 
 		switch record.(type) {
-		case sflow.GenericIfaceCounters:
-			c := record.(sflow.GenericIfaceCounters)
+		case sflow.GenericInterfaceCounters:
+			c := record.(sflow.GenericInterfaceCounters)
 
 			p.reg.Insert(registryKey, fmt.Sprintf("if%d.%s", c.Index, "octets_in"), metrics.TypeDerivative, c.InOctets)
 			p.reg.Insert(registryKey, fmt.Sprintf("if%d.%s", c.Index, "unicast_packets_in"), metrics.TypeDerivative, c.InUcastPkts)

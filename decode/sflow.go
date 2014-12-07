@@ -38,7 +38,6 @@ func (d *SflowDecoder) Run() {
 			decoder.Use(r)
 
 			dgram, err := decoder.Decode()
-			log.Println(dgram, err)
 			if err == nil {
 				d.outbound <- *dgram
 			} else {

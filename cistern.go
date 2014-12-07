@@ -77,14 +77,14 @@ func main() {
 
 	processingPipeline := &pipeline.Pipeline{}
 	processingPipeline.Add(pipeline.NewHostProcessor(hostRegistry))
-	processingPipeline.Add(pipeline.NewGenericIfaceProcessor(hostRegistry))
+	processingPipeline.Add(pipeline.NewGenericInterfaceCountersProcessor(hostRegistry))
 	processingPipeline.Add(pipeline.NewRawPacketProcessor(hostRegistry))
 
 	pipelineMessages := make(chan pipeline.Message, 16)
 	// TODO: refactor this part out
 	go func() {
 		for datagram := range sflowDecoder.Outbound() {
-			source := datagram.Header.IpAddress.String()
+			source := datagram.IpAddress.String()
 
 			for _, sample := range datagram.Samples {
 				for _, record := range sample.GetRecords() {

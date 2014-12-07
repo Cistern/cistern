@@ -1,8 +1,7 @@
 package pipeline
 
 import (
-	"github.com/PreetamJinka/sflow"
-
+	"github.com/PreetamJinka/cistern/net/sflow"
 	"github.com/PreetamJinka/cistern/state/metrics"
 )
 
@@ -89,7 +88,10 @@ func (h *HostProcessor) Process() {
 			h.reg.Insert(registryKey, "net.drops_out", metrics.TypeDerivative, n.DropsOut)
 
 		default:
-			h.outbound <- message
+			select {
+			case h.outbound <- message:
+			default:
+			}
 		}
 	}
 }

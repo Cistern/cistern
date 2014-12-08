@@ -3,6 +3,8 @@ package snmp
 import (
 	"bytes"
 	"encoding/asn1"
+	"errors"
+	"fmt"
 )
 
 type DataType interface {
@@ -131,10 +133,36 @@ func (s Report) Encode() ([]byte, error) {
 	return append(encodeHeaderSequence(0xa8, seqLength), buf.Bytes()...), nil
 }
 
-type ObjectIdentifier []byte
+type ObjectIdentifier []uint16
 
 func (oid ObjectIdentifier) Encode() ([]byte, error) {
-	return append(encodeHeaderSequence(0x6, len(oid)), oid...), nil
+	if len(oid) < 2 {
+		return nil, errors.New("snmp: invalid ObjectIdentifier length")
+	}
+
+	if oid[0] != 1 && oid[1] != 3 {
+		return nil, errors.New("ObjectIdentifier does not start with .1.3")
+	}
+
+	b := make([]byte, 0, len(oid)+1)
+
+	b = append(b, 0x2b)
+
+	for i := 2; i < len(oid); i++ {
+		b = append(b, encodeOIDUint(oid[i])...)
+	}
+
+	return append(encodeHeaderSequence(0x6, len(b)), b...), nil
+}
+
+func (oid ObjectIdentifier) String() string {
+	str := ""
+
+	for _, part := range oid {
+		str += fmt.Sprintf(".%d", part)
+	}
+
+	return str
 }
 
 type null byte

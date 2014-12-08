@@ -136,12 +136,30 @@ func Decode(r io.Reader) (DataType, int, error) {
 
 	if t == 0x06 {
 
-		oid := make(ObjectIdentifier, length)
-		n, err := r.Read(oid)
+		// Read into a buffer
+		b := make([]byte, length)
+		n, err := r.Read(b)
 		bytesRead += n
 
 		if err != nil {
 			return nil, bytesRead, err
+		}
+
+		// Decode OID
+		oid := ObjectIdentifier{uint16(b[0]) / 40, uint16(b[0]) % 40}
+
+		for i := 1; i < length; i++ {
+			val := uint16(0)
+
+			for b[i] >= 128 {
+				val += uint16(b[i]) - 128
+				val *= 128
+				i++
+			}
+
+			val += uint16(b[i])
+
+			oid = append(oid, val)
 		}
 
 		return oid, bytesRead, nil

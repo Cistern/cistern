@@ -208,7 +208,7 @@ func (s *Session) Discover() error {
 	return nil
 }
 
-func (s *Session) Get(oid []byte) (interface{}, error) {
+func (s *Session) Get(oid ObjectIdentifier) (interface{}, error) {
 	reqId := Int(rand.Int31())
 
 	getReq, err := Sequence{
@@ -220,7 +220,7 @@ func (s *Session) Get(oid []byte) (interface{}, error) {
 			Int(0),
 			Sequence{
 				Sequence{
-					ObjectIdentifier(oid),
+					oid,
 					Null,
 				},
 			},
@@ -271,7 +271,7 @@ func (s *Session) Get(oid []byte) (interface{}, error) {
 	return result, err
 }
 
-func (s *Session) GetNext(oid []byte) (interface{}, error) {
+func (s *Session) GetNext(oid ObjectIdentifier) (interface{}, error) {
 	reqId := Int(rand.Int31())
 
 	getNextReq, err := Sequence{
@@ -283,7 +283,7 @@ func (s *Session) GetNext(oid []byte) (interface{}, error) {
 			Int(0),
 			Sequence{
 				Sequence{
-					ObjectIdentifier(oid),
+					oid,
 					Null,
 				},
 			},

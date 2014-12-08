@@ -18,6 +18,9 @@ var (
 	sflowListenAddr = ":6343"
 	apiListenAddr   = ":8080"
 	configFile      = "/opt/cistern/config.json"
+
+	descOid     = snmp.MustParseOID(".1.3.6.1.2.1.1.1.0")
+	hostnameOid = snmp.MustParseOID(".1.3.6.1.2.1.1.5.0")
 )
 
 func main() {
@@ -36,7 +39,7 @@ func main() {
 	}
 
 	for _, device := range conf.SNMPDevices {
-
+		// TODO: refactor this part out
 		go func(dev config.SNMPEntry) {
 			session, err := snmp.NewSession(dev.Address, dev.User, dev.AuthPassphrase, dev.PrivPassphrase)
 			if err != nil {
@@ -50,14 +53,22 @@ func main() {
 				return
 			}
 
-			resp, err := session.Get([]byte{0x2b, 0x06, 0x01, 0x02, 0x01, 0x01, 0x01, 0x00})
+			resp, err := session.Get(descOid)
 			if err != nil {
-				log.Printf("[SNMP] Discovery failed for %s", dev.Address)
+				log.Printf("[SNMP] Get desc failed for %s", dev.Address)
 				return
 			}
 			deviceDesc := string(resp.(snmp.Sequence)[2].(snmp.GetResponse)[3].(snmp.Sequence)[0].(snmp.Sequence)[1].(snmp.String))
 
-			log.Printf("[SNMP] Discovery\n at %s:\n  %s", dev.Address, deviceDesc)
+			resp, err = session.Get(hostnameOid)
+			if err != nil {
+				log.Printf("[SNMP] Get hostname failed for %s", dev.Address)
+				return
+			}
+
+			deviceHostname := string(resp.(snmp.Sequence)[2].(snmp.GetResponse)[3].(snmp.Sequence)[0].(snmp.Sequence)[1].(snmp.String))
+
+			log.Printf("[SNMP] Discovery\n at %s [%s]:\n  %s", dev.Address, deviceHostname, deviceDesc)
 		}(device)
 	}
 

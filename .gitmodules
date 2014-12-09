@@ -4,9 +4,6 @@
 [submodule "net/proto"]
 	path = net/proto
 	url = git@github.com:PreetamJinka/proto.git
-[submodule "state/series/--force"]
-	path = state/series/--force
-	url = git@github.com:boltdb/bolt.git
 [submodule "state/series/bolt"]
 	path = state/series/bolt
 	url = git@github.com:boltdb/bolt.git

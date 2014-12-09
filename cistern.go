@@ -12,6 +12,7 @@ import (
 	"github.com/PreetamJinka/cistern/net/snmp"
 	"github.com/PreetamJinka/cistern/pipeline"
 	"github.com/PreetamJinka/cistern/state/metrics"
+	"github.com/PreetamJinka/cistern/state/series"
 )
 
 var (
@@ -111,9 +112,16 @@ func main() {
 
 	go LogDiagnostics(hostRegistry)
 
-	api := api.NewApiServer(apiListenAddr, hostRegistry)
+	engine, err := series.NewEngine("/tmp/cistern.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	api := api.NewApiServer(apiListenAddr, hostRegistry, engine)
 	api.Run()
 	log.Printf("started API server listening on %s", apiListenAddr)
+
+	go hostRegistry.RunSnapshotter(engine)
 
 	// make sure we don't exit
 	<-make(chan struct{})

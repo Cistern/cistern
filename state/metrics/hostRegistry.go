@@ -3,6 +3,9 @@ package metrics
 import (
 	"errors"
 	"sync"
+	"time"
+
+	"github.com/PreetamJinka/cistern/state/series"
 )
 
 var (
@@ -79,4 +82,21 @@ func (h *HostRegistry) MetricStates(host string, metrics ...string) []float32 {
 	}
 
 	return values
+}
+
+func (h *HostRegistry) RunSnapshotter(engine *series.Engine) {
+	for now := range time.Tick(time.Minute) {
+		h.lock.RLock()
+
+		for host, metricReg := range h.hosts {
+			for metric, metricState := range metricReg.metrics {
+				metricVal := metricState.Value()
+				if metricVal == metricVal {
+					engine.InsertPoint(host, metric, now, metricVal)
+				}
+			}
+		}
+
+		h.lock.RUnlock()
+	}
 }

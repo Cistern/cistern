@@ -59,7 +59,16 @@ func main() {
 				log.Printf("[SNMP] Get desc failed for %s", dev.Address)
 				return
 			}
-			deviceDesc := string(resp.(snmp.Sequence)[2].(snmp.GetResponse)[3].(snmp.Sequence)[0].(snmp.Sequence)[1].(snmp.String))
+
+			deviceDesc := ""
+
+			if vbinds := resp.Varbinds(); len(vbinds) > 0 {
+				deviceDesc, err = vbinds[0].GetStringValue()
+				if err != nil {
+					log.Printf("[SNMP] Did not get a string value for device description for %s", dev.Address)
+					return
+				}
+			}
 
 			resp, err = session.Get(hostnameOid)
 			if err != nil {
@@ -67,7 +76,15 @@ func main() {
 				return
 			}
 
-			deviceHostname := string(resp.(snmp.Sequence)[2].(snmp.GetResponse)[3].(snmp.Sequence)[0].(snmp.Sequence)[1].(snmp.String))
+			deviceHostname := ""
+
+			if vbinds := resp.Varbinds(); len(vbinds) > 0 {
+				deviceHostname, err = vbinds[0].GetStringValue()
+				if err != nil {
+					log.Printf("[SNMP] Did not get a string value for device hostname for %s", dev.Address)
+					return
+				}
+			}
 
 			log.Printf("[SNMP] Discovery\n at %s [%s]:\n  %s", dev.Address, deviceHostname, deviceDesc)
 		}(device)

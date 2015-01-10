@@ -3,6 +3,8 @@ package device
 import (
 	"net"
 	"sync"
+
+	"github.com/PreetamJinka/cistern/net/snmp"
 )
 
 // A Registry is a device registry.
@@ -11,14 +13,22 @@ type Registry struct {
 	// devices is a map from IP address string to Device.
 	devices map[string]*Device
 
+	sessionManager *snmp.SessionManager
+
 	sync.Mutex
 }
 
 // NewRegistry creates a new device registry.
-func NewRegistry() *Registry {
-	return &Registry{
-		devices: map[string]*Device{},
+func NewRegistry() (*Registry, error) {
+	sessionManager, err := snmp.NewSessionManager()
+	if err != nil {
+		return nil, err
 	}
+
+	return &Registry{
+		devices:        map[string]*Device{},
+		sessionManager: sessionManager,
+	}, nil
 }
 
 // Devices returns a slice of devices in the registry.
@@ -58,4 +68,21 @@ func (r *Registry) LookupOrAdd(address net.IP) *Device {
 	dev = NewDevice(address)
 	r.devices[address.String()] = dev
 	return dev
+}
+
+func (r *Registry) SetDeviceSNMP(deviceAddress net.IP, snmpAddr, user, auth, priv string) error {
+	d := r.LookupOrAdd(deviceAddress)
+
+	sess, err := r.sessionManager.NewSession(snmpAddr, user, auth, priv)
+	if err != nil {
+		return err
+	}
+
+	err = sess.Discover()
+	if err != nil {
+		return err
+	}
+
+	d.snmpSession = sess
+	return nil
 }

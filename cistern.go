@@ -58,7 +58,11 @@ func main() {
 		log.Println("\n  " + string(confBytes))
 	}
 
-	registry := device.NewRegistry()
+	registry, err := device.NewRegistry()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	for _, dev := range conf.Devices {
 
 		ip := net.ParseIP(dev.IP)
@@ -82,7 +86,7 @@ func main() {
 
 			addr = fmt.Sprintf("%s:%d", addr, port)
 
-			err = registryDev.SetSNMP(addr, dev.SNMP.User, dev.SNMP.AuthPassphrase, dev.SNMP.PrivPassphrase)
+			err = registry.SetDeviceSNMP(ip, addr, dev.SNMP.User, dev.SNMP.AuthPassphrase, dev.SNMP.PrivPassphrase)
 			if err == nil {
 				log.Println("Successfully created SNMP session with", addr)
 				log.Println("Starting device discovery")

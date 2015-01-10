@@ -38,21 +38,6 @@ func NewDevice(address net.IP) *Device {
 	}
 }
 
-func (d *Device) SetSNMP(address, user, auth, priv string) error {
-	sess, err := snmp.NewSession(address, user, auth, priv)
-	if err != nil {
-		return err
-	}
-
-	err = sess.Discover()
-	if err != nil {
-		return err
-	}
-
-	d.snmpSession = sess
-	return nil
-}
-
 func (d *Device) Discover() {
 	wg := sync.WaitGroup{}
 

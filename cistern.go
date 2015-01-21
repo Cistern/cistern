@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"runtime"
 
 	"github.com/PreetamJinka/udpchan"
 
@@ -26,6 +27,8 @@ var (
 )
 
 func main() {
+
+	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	// Flags
 	flag.StringVar(&sflowListenAddr, "sflow-listen-addr", sflowListenAddr, "listen address for sFlow datagrams")
@@ -137,7 +140,7 @@ func main() {
 
 	go LogDiagnostics(hostRegistry)
 
-	engine, err := series.NewEngine("/tmp/cistern.db")
+	engine, err := series.NewEngine("/tmp/cistern/series")
 	if err != nil {
 		log.Fatal(err)
 	}

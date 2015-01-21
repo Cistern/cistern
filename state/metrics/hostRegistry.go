@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/PreetamJinka/catena"
 	"github.com/PreetamJinka/cistern/state/series"
 )
 
@@ -85,18 +86,31 @@ func (h *HostRegistry) MetricStates(host string, metrics ...string) []float32 {
 }
 
 func (h *HostRegistry) RunSnapshotter(engine *series.Engine) {
+	now := time.Now()
+
+	<-time.After(now.Add(time.Minute).Truncate(time.Minute).Sub(now))
+
 	for now := range time.Tick(time.Minute) {
 		h.lock.RLock()
+
+		rows := catena.Rows{}
 
 		for host, metricReg := range h.hosts {
 			for metric, metricState := range metricReg.metrics {
 				metricVal := metricState.Value()
 				if metricVal == metricVal {
-					engine.InsertPoint(host, metric, now, metricVal)
+					rows = append(rows, catena.Row{
+						Source:    host,
+						Metric:    metric,
+						Timestamp: now.Unix(),
+						Value:     float64(metricVal),
+					})
 				}
 			}
 		}
 
 		h.lock.RUnlock()
+
+		engine.InsertRows(rows)
 	}
 }

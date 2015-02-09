@@ -1,15 +1,20 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
+	"net"
+	"os"
+	"runtime"
 
 	"github.com/PreetamJinka/udpchan"
 
 	"github.com/PreetamJinka/cistern/api"
 	"github.com/PreetamJinka/cistern/config"
 	"github.com/PreetamJinka/cistern/decode"
-	"github.com/PreetamJinka/cistern/net/snmp"
+	"github.com/PreetamJinka/cistern/device"
 	"github.com/PreetamJinka/cistern/pipeline"
 	"github.com/PreetamJinka/cistern/state/metrics"
 	"github.com/PreetamJinka/cistern/state/series"
@@ -19,75 +24,81 @@ var (
 	sflowListenAddr = ":6343"
 	apiListenAddr   = ":8080"
 	configFile      = "/opt/cistern/config.json"
-
-	descOid     = snmp.MustParseOID(".1.3.6.1.2.1.1.1.0")
-	hostnameOid = snmp.MustParseOID(".1.3.6.1.2.1.1.5.0")
 )
 
 func main() {
+
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
+	// Flags
 	flag.StringVar(&sflowListenAddr, "sflow-listen-addr", sflowListenAddr, "listen address for sFlow datagrams")
 	flag.StringVar(&apiListenAddr, "api-listen-addr", apiListenAddr, "listen address for HTTP API server")
 	flag.StringVar(&configFile, "config", configFile, "configuration file")
+	showVersion := flag.Bool("version", false, "Show version")
 	flag.Parse()
+
+	log.SetFlags(log.Lshortfile | log.Lmicroseconds)
+
+	if *showVersion {
+		fmt.Println("Cistern version", version)
+		os.Exit(0)
+	}
 
 	log.Printf("Cistern version %s starting", version)
 
-	log.Printf("Loading configuration file at %s", configFile)
+	log.Printf("Attempting to load configuration file at %s", configFile)
 
 	conf, err := config.Load(configFile)
 	if err != nil {
-		log.Print(err)
+		log.Printf("Could not load configuration: %v", err)
 	}
 
-	for _, device := range conf.SNMPDevices {
-		// TODO: refactor this part out
-		go func(dev config.SNMPEntry) {
-			session, err := snmp.NewSession(dev.Address, dev.User, dev.AuthPassphrase, dev.PrivPassphrase)
-			if err != nil {
-				log.Println(err)
-				return
+	// Log the loaded config
+	confBytes, err := json.MarshalIndent(conf, "  ", "  ")
+	if err != nil {
+		log.Println("Could not log config:", err)
+	} else {
+		log.Println("\n  " + string(confBytes))
+	}
+
+	registry, err := device.NewRegistry()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, dev := range conf.Devices {
+
+		ip := net.ParseIP(dev.IP)
+		// Add a device to the registry
+		registryDev := registry.LookupOrAdd(ip)
+
+		if dev.SNMP != nil {
+			// We have an SNMP config
+			addr := ip.String()
+			if ip.To4() == nil {
+				// IPv6 addresses need to be surrounded
+				// with `[` and `]`.
+				addr = "[" + addr + "]"
 			}
 
-			err = session.Discover()
-			if err != nil {
-				log.Printf("[SNMP] Discovery failed for %s", dev.Address)
-				return
+			port := 161
+
+			if dev.SNMP.Port != 0 {
+				port = dev.SNMP.Port
 			}
 
-			resp, err := session.Get(descOid)
-			if err != nil {
-				log.Printf("[SNMP] Get desc failed for %s", dev.Address)
-				return
+			addr = fmt.Sprintf("%s:%d", addr, port)
+
+			err = registry.SetDeviceSNMP(ip, addr, dev.SNMP.User, dev.SNMP.AuthPassphrase, dev.SNMP.PrivPassphrase)
+			if err == nil {
+				log.Println("Successfully created SNMP session with", addr)
+				log.Println("Starting device discovery")
+
+				registryDev.Discover()
+			} else {
+				log.Printf("SNMP session creation failed for %v: %v", addr, err)
 			}
-
-			deviceDesc := ""
-
-			if vbinds := resp.Varbinds(); len(vbinds) > 0 {
-				deviceDesc, err = vbinds[0].GetStringValue()
-				if err != nil {
-					log.Printf("[SNMP] Did not get a string value for device description for %s", dev.Address)
-					return
-				}
-			}
-
-			resp, err = session.Get(hostnameOid)
-			if err != nil {
-				log.Printf("[SNMP] Get hostname failed for %s", dev.Address)
-				return
-			}
-
-			deviceHostname := ""
-
-			if vbinds := resp.Varbinds(); len(vbinds) > 0 {
-				deviceHostname, err = vbinds[0].GetStringValue()
-				if err != nil {
-					log.Printf("[SNMP] Did not get a string value for device hostname for %s", dev.Address)
-					return
-				}
-			}
-
-			log.Printf("[SNMP] Discovery\n at %s [%s]:\n  %s", dev.Address, deviceHostname, deviceDesc)
-		}(device)
+		}
 	}
 
 	// start listening
@@ -129,7 +140,7 @@ func main() {
 
 	go LogDiagnostics(hostRegistry)
 
-	engine, err := series.NewEngine("/tmp/cistern.db")
+	engine, err := series.NewEngine("/tmp/cistern/series")
 	if err != nil {
 		log.Fatal(err)
 	}

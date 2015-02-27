@@ -5,7 +5,7 @@ import (
 	"net"
 	"sync"
 
-	"github.com/PreetamJinka/cistern/net/snmp"
+	"github.com/PreetamJinka/snmp"
 )
 
 type deviceType int

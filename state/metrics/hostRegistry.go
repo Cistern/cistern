@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/PreetamJinka/catena"
+
 	"github.com/PreetamJinka/cistern/state/series"
 )
 

@@ -4,8 +4,9 @@ import (
 	"log"
 	"net"
 
-	"github.com/PreetamJinka/cistern/net/proto"
-	"github.com/PreetamJinka/cistern/net/sflow"
+	"github.com/PreetamJinka/proto"
+	"github.com/PreetamJinka/sflow"
+
 	"github.com/PreetamJinka/cistern/state/metrics"
 )
 
@@ -41,7 +42,11 @@ func (p *RawPacketProcessor) Process() {
 			rawFlow := record.(sflow.RawPacketFlow)
 			sampleBytes := rawFlow.Header
 
-			ethernetPacket := proto.DecodeEthernet(sampleBytes)
+			ethernetPacket, err := proto.DecodeEthernet(sampleBytes)
+			if err != nil {
+				log.Println("DecodeEthernet:", err)
+				continue
+			}
 
 			var (
 				protocol    uint8
@@ -60,7 +65,11 @@ func (p *RawPacketProcessor) Process() {
 
 			switch ethernetPacket.EtherType {
 			case 0x0800:
-				ipv4Packet := proto.DecodeIPv4(ethernetPacket.Payload)
+				ipv4Packet, err := proto.DecodeIPv4(ethernetPacket.Payload)
+				if err != nil {
+					log.Println("DecodeIPv4:", err)
+					continue
+				}
 
 				sourceAddr = ipv4Packet.Source
 				destAddr = ipv4Packet.Destination
@@ -71,7 +80,11 @@ func (p *RawPacketProcessor) Process() {
 				length = ipv4Packet.Length
 
 			case 0x86dd:
-				ipv6Packet := proto.DecodeIPv6(ethernetPacket.Payload)
+				ipv6Packet, err := proto.DecodeIPv6(ethernetPacket.Payload)
+				if err != nil {
+					log.Println("DecodeIPv6:", err)
+					continue
+				}
 
 				sourceAddr = ipv6Packet.Source
 				destAddr = ipv6Packet.Destination
@@ -84,7 +97,11 @@ func (p *RawPacketProcessor) Process() {
 
 			switch protocol {
 			case 0x6:
-				tcpPacket := proto.DecodeTCP(ipPayload)
+				tcpPacket, err := proto.DecodeTCP(ipPayload)
+				if err != nil {
+					log.Println("DecodeTCP:", err)
+					continue
+				}
 
 				sourcePort = tcpPacket.SourcePort
 				destPort = tcpPacket.DestinationPort
@@ -92,7 +109,11 @@ func (p *RawPacketProcessor) Process() {
 				protocolStr = "TCP"
 
 			case 0x11:
-				udpPacket := proto.DecodeUDP(ipPayload)
+				udpPacket, err := proto.DecodeUDP(ipPayload)
+				if err != nil {
+					log.Println("DecodeUDP:", err)
+					continue
+				}
 
 				sourcePort = udpPacket.SourcePort
 				destPort = udpPacket.DestinationPort

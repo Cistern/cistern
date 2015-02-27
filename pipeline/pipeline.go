@@ -3,7 +3,7 @@ package pipeline
 import (
 	"log"
 
-	"github.com/PreetamJinka/cistern/net/sflow"
+	"github.com/PreetamJinka/sflow"
 )
 
 type Pipeline struct {

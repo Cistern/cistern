@@ -3,7 +3,8 @@ package pipeline
 import (
 	"fmt"
 
-	"github.com/PreetamJinka/cistern/net/sflow"
+	"github.com/PreetamJinka/sflow"
+
 	"github.com/PreetamJinka/cistern/state/metrics"
 )
 

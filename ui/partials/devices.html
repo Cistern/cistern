@@ -1,0 +1,12 @@
+<h1>Devices</h1>
+
+<ul class='device-list'>
+  <li ng-repeat='device in devices'>
+    {{device.ip}}
+
+    <button class='btn' ng-click='loadMetrics(device)'>Metrics</button>
+    <ul>
+      <li ng-repeat='metric in device.metrics'>{{metric.name}}</li>
+    </ul>
+  </li>
+</ul>

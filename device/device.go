@@ -112,7 +112,7 @@ func (d *Device) Discover() {
 	wg.Wait()
 }
 
-func (d *Device) Metrics() []string {
+func (d *Device) Metrics() []metrics.MetricDefinition {
 	return d.metricRegistry.Metrics()
 }
 

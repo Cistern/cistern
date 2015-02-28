@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"net"
 	"net/http"
 
 	"github.com/VividCortex/siesta"
@@ -27,9 +28,13 @@ func NewAPIServer(address string, deviceRegistry *device.Registry, seriesEngine 
 func (s *APIServer) Run() {
 	service := siesta.NewService("/")
 
-	service.AddPost(func(c siesta.Context, w http.ResponseWriter, r *http.Request) {
+	service.AddPost(func(c siesta.Context, w http.ResponseWriter, r *http.Request, q func()) {
 		resp := c.Get(responseKey)
 		err, _ := c.Get(errorKey).(string)
+
+		if resp == nil && err == "" {
+			return
+		}
 
 		enc := json.NewEncoder(w)
 		enc.Encode(APIResponse{
@@ -59,6 +64,31 @@ func (s *APIServer) Run() {
 
 		c.Set(responseKey, devices)
 	})
+
+	service.Route("GET", "/devices/:device/metrics",
+		"Lists metrics for a device",
+		func(c siesta.Context, w http.ResponseWriter, r *http.Request) {
+			var params siesta.Params
+			device := params.String("device", "", "Device name")
+			err := params.Parse(r.Form)
+			if err != nil {
+				c.Set(errorKey, err.Error())
+				return
+			}
+
+			address := net.ParseIP(*device)
+			dev, present := s.deviceRegistry.Lookup(address)
+			if !present {
+				c.Set(errorKey, "device not found")
+				return
+			}
+
+			c.Set(responseKey, dev.Metrics())
+		})
+
+	service.Route("GET", "/series/query",
+		"Lists metrics for a device",
+		s.querySeriesRoute())
 
 	http.Handle("/", service)
 

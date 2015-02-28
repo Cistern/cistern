@@ -4,6 +4,11 @@ import (
 	"math"
 )
 
+type MetricDefinition struct {
+	Name string     `json:"name"`
+	Type MetricType `json:"type"`
+}
+
 type MetricRegistry struct {
 	metrics map[string]MetricState
 }
@@ -39,11 +44,14 @@ func (m *MetricRegistry) Get(metric string) float32 {
 	return state.Value()
 }
 
-func (m *MetricRegistry) Metrics() []string {
-	metrics := []string{}
+func (m *MetricRegistry) Metrics() []MetricDefinition {
+	metrics := []MetricDefinition{}
 
-	for metric := range m.metrics {
-		metrics = append(metrics, metric)
+	for metric, state := range m.metrics {
+		metrics = append(metrics, MetricDefinition{
+			Name: metric,
+			Type: state.Type(),
+		})
 	}
 
 	return metrics

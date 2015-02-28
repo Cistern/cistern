@@ -28,6 +28,10 @@ func NewAPIServer(address string, deviceRegistry *device.Registry, seriesEngine 
 func (s *APIServer) Run() {
 	service := siesta.NewService("/")
 
+	service.AddPre(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+	})
+
 	service.AddPost(func(c siesta.Context, w http.ResponseWriter, r *http.Request, q func()) {
 		resp := c.Get(responseKey)
 		err, _ := c.Get(errorKey).(string)

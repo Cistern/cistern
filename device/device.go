@@ -4,8 +4,13 @@ import (
 	"log"
 	"net"
 	"sync"
+	"time"
 
+	"github.com/PreetamJinka/sflow"
 	"github.com/PreetamJinka/snmp"
+
+	"github.com/PreetamJinka/cistern/state/metrics"
+	"github.com/PreetamJinka/cistern/state/series"
 )
 
 type deviceType int
@@ -15,6 +20,7 @@ const (
 
 	TypeNetwork deviceType = 1 << (iota - 1)
 	TypeLinux
+	TypeBSD
 )
 
 var (
@@ -25,17 +31,32 @@ var (
 // A Device is an entity that sends flows or
 // makes information available via SNMP.
 type Device struct {
-	hostname    string
-	desc        string
-	ip          net.IP
-	snmpSession *snmp.Session
+	hostname   string
+	desc       string
+	ip         net.IP
+	deviceType deviceType
+
+	snmpSession    *snmp.Session
+	metricRegistry *metrics.MetricRegistry
+
+	Inbound  chan sflow.Datagram
+	outbound chan series.Observation
 }
 
 // NewDevice returns a new Device with the given IP.
-func NewDevice(address net.IP) *Device {
-	return &Device{
+func NewDevice(address net.IP, outboundObservations chan series.Observation) *Device {
+	dev := &Device{
 		ip: address,
+
+		metricRegistry: metrics.NewMetricRegistry(),
+
+		Inbound:  make(chan sflow.Datagram),
+		outbound: outboundObservations,
 	}
+
+	go dev.handleFlows()
+
+	return dev
 }
 
 func (d *Device) Discover() {
@@ -89,4 +110,54 @@ func (d *Device) Discover() {
 	}()
 
 	wg.Wait()
+}
+
+func (d *Device) Metrics() []string {
+	return d.metricRegistry.Metrics()
+}
+
+func (d *Device) IP() net.IP {
+	return d.ip
+}
+
+func (d *Device) Hostname() string {
+	return d.hostname
+}
+
+func (d *Device) handleFlows() {
+
+	log.Printf("[Device %v] Handling flows", d.ip)
+
+	for dgram := range d.Inbound {
+		for _, sample := range dgram.Samples {
+			for _, record := range sample.GetRecords() {
+				d.processFlowRecord(record)
+			}
+		}
+	}
+}
+
+func (d *Device) processFlowRecord(r sflow.Record) {
+	switch r.(type) {
+	case sflow.HostCpuCounters:
+		d.processHostCPUCounters(r.(sflow.HostCpuCounters))
+	case sflow.HostMemoryCounters:
+		d.processHostMemoryCounters(r.(sflow.HostMemoryCounters))
+	case sflow.HostDiskCounters:
+		d.processHostDiskCounters(r.(sflow.HostDiskCounters))
+	case sflow.HostNetCounters:
+		d.processHostNetCounters(r.(sflow.HostNetCounters))
+	case sflow.GenericInterfaceCounters:
+		d.processGenericInterfaceCounters(r.(sflow.GenericInterfaceCounters))
+	}
+}
+
+func (d *Device) updateAndEmit(metric string, metricType metrics.MetricType, v interface{}) {
+	value := d.metricRegistry.Update(metric, metricType, v)
+	d.outbound <- series.Observation{
+		Source:    d.ip.String(),
+		Metric:    metric,
+		Timestamp: time.Now().Unix(),
+		Value:     float64(value),
+	}
 }

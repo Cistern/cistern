@@ -5,29 +5,34 @@ import (
 	"sync"
 
 	"github.com/PreetamJinka/snmp"
+
+	"github.com/PreetamJinka/cistern/state/series"
 )
 
 // A Registry is a device registry.
 type Registry struct {
 
-	// devices is a map from IP address string to Device.
-	devices map[string]*Device
+	// devices is a map from IP address (max 16 bytes) string to Device.
+	devices map[[16]byte]*Device
 
 	sessionManager *snmp.SessionManager
+
+	outbound chan series.Observation
 
 	sync.Mutex
 }
 
 // NewRegistry creates a new device registry.
-func NewRegistry() (*Registry, error) {
+func NewRegistry(outbound chan series.Observation) (*Registry, error) {
 	sessionManager, err := snmp.NewSessionManager()
 	if err != nil {
 		return nil, err
 	}
 
 	return &Registry{
-		devices:        map[string]*Device{},
+		devices:        map[[16]byte]*Device{},
 		sessionManager: sessionManager,
+		outbound:       outbound,
 	}, nil
 }
 
@@ -51,7 +56,10 @@ func (r *Registry) NumDevices() int {
 }
 
 func (r *Registry) Lookup(address net.IP) (*Device, bool) {
-	dev, present := r.devices[address.String()]
+	byteAddr := [16]byte{}
+	copy(byteAddr[:], address.To16())
+
+	dev, present := r.devices[byteAddr]
 
 	return dev, present
 }
@@ -65,8 +73,12 @@ func (r *Registry) LookupOrAdd(address net.IP) *Device {
 		return dev
 	}
 
-	dev = NewDevice(address)
-	r.devices[address.String()] = dev
+	dev = NewDevice(address, r.outbound)
+
+	byteAddr := [16]byte{}
+	copy(byteAddr[:], address.To16())
+
+	r.devices[byteAddr] = dev
 	return dev
 }
 

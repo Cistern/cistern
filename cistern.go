@@ -15,8 +15,6 @@ import (
 	"github.com/PreetamJinka/cistern/config"
 	"github.com/PreetamJinka/cistern/decode"
 	"github.com/PreetamJinka/cistern/device"
-	"github.com/PreetamJinka/cistern/pipeline"
-	"github.com/PreetamJinka/cistern/state/metrics"
 	"github.com/PreetamJinka/cistern/state/series"
 )
 
@@ -35,12 +33,19 @@ func main() {
 	flag.StringVar(&apiListenAddr, "api-listen-addr", apiListenAddr, "listen address for HTTP API server")
 	flag.StringVar(&configFile, "config", configFile, "configuration file")
 	showVersion := flag.Bool("version", false, "Show version")
+	showLicense := flag.Bool("license", false, "Show software licenses")
+	showConfig := flag.Bool("show-config", false, "Show loaded config file")
 	flag.Parse()
 
 	log.SetFlags(log.Lshortfile | log.Lmicroseconds)
 
 	if *showVersion {
 		fmt.Println("Cistern version", version)
+		os.Exit(0)
+	}
+
+	if *showLicense {
+		fmt.Println(license)
 		os.Exit(0)
 	}
 
@@ -58,10 +63,17 @@ func main() {
 	if err != nil {
 		log.Println("Could not log config:", err)
 	} else {
-		log.Println("\n  " + string(confBytes))
+		if *showConfig {
+			log.Println("\n  " + string(confBytes))
+		}
 	}
 
-	registry, err := device.NewRegistry()
+	engine, err := series.NewEngine("/tmp/cistern/series")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	registry, err := device.NewRegistry(engine.Inbound)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -113,43 +125,18 @@ func main() {
 	sflowDecoder := decode.NewSflowDecoder(c, 16)
 	sflowDecoder.Run()
 
-	hostRegistry := metrics.NewHostRegistry()
-
-	processingPipeline := &pipeline.Pipeline{}
-	processingPipeline.Add(pipeline.NewHostProcessor(hostRegistry))
-	processingPipeline.Add(pipeline.NewGenericInterfaceCountersProcessor(hostRegistry))
-	processingPipeline.Add(pipeline.NewRawPacketProcessor(hostRegistry))
-
-	pipelineMessages := make(chan pipeline.Message, 16)
-	// TODO: refactor this part out
 	go func() {
 		for datagram := range sflowDecoder.Outbound() {
-			source := datagram.IpAddress.String()
+			source := datagram.IpAddress
 
-			for _, sample := range datagram.Samples {
-				for _, record := range sample.GetRecords() {
-					pipelineMessages <- pipeline.Message{
-						Source: source,
-						Record: record,
-					}
-				}
-			}
+			registryDev := registry.LookupOrAdd(source)
+			registryDev.Inbound <- datagram
 		}
 	}()
-	processingPipeline.Run(pipelineMessages)
 
-	go LogDiagnostics(hostRegistry)
-
-	engine, err := series.NewEngine("/tmp/cistern/series")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	api := api.NewApiServer(apiListenAddr, hostRegistry, engine)
-	api.Run()
-	log.Printf("started API server listening on %s", apiListenAddr)
-
-	go hostRegistry.RunSnapshotter(engine)
+	apiServer := api.NewAPIServer(apiListenAddr, registry, engine)
+	apiServer.Run()
+	log.Printf("API server started on %s", apiListenAddr)
 
 	// make sure we don't exit
 	<-make(chan struct{})

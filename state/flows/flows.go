@@ -18,9 +18,12 @@ const (
 )
 
 type Flow struct {
-	Source      net.IP `json:"source"`
-	Destination net.IP `json:"destination"`
-	Protocol    string `json:"protocol"`
+	Source          net.IP `json:"source"`
+	Destination     net.IP `json:"destination"`
+	SourcePort      int    `json:"sourcePort"`
+	DestinationPort int    `json:"destinationPort"`
+
+	Protocol string `json:"protocol"`
 
 	bytesDerivative   metrics.MetricState
 	packetsDerivative metrics.MetricState
@@ -110,6 +113,8 @@ func (t *TopTalkers) Update(protocol string,
 	if flow, present = t.flows[key]; !present {
 		flow.Source = source
 		flow.Destination = destination
+		flow.SourcePort = sourcePort
+		flow.DestinationPort = destPort
 		flow.bytesDerivative = metrics.DerivativeState{}
 		flow.packetsDerivative = metrics.DerivativeState{}
 		flow.Protocol = protocol

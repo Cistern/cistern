@@ -8,6 +8,7 @@ import (
 	"github.com/VividCortex/siesta"
 
 	"github.com/PreetamJinka/cistern/device"
+	"github.com/PreetamJinka/cistern/state/flows"
 	"github.com/PreetamJinka/cistern/state/series"
 )
 
@@ -88,6 +89,43 @@ func (s *APIServer) Run() {
 			}
 
 			c.Set(responseKey, dev.Metrics())
+		})
+
+	service.Route("GET", "/devices/:device/flows",
+		"Lists top flows for a device",
+		func(c siesta.Context, w http.ResponseWriter, r *http.Request) {
+			var params siesta.Params
+			device := params.String("device", "", "Device name")
+			err := params.Parse(r.Form)
+			if err != nil {
+				c.Set(errorKey, err.Error())
+				return
+			}
+
+			address := net.ParseIP(*device)
+			dev, present := s.deviceRegistry.Lookup(address)
+			if !present {
+				c.Set(errorKey, "device not found")
+				return
+			}
+
+			type flowsResponse struct {
+				ByBytes   []flows.Flow `json:"byBytes"`
+				ByPackets []flows.Flow `json:"byPackets"`
+			}
+
+			topTalkers := dev.TopTalkers()
+			if topTalkers == nil {
+				c.Set(errorKey, "No active flows")
+				return
+			}
+
+			resp := flowsResponse{
+				ByBytes:   topTalkers.ByBytes(),
+				ByPackets: topTalkers.ByPackets(),
+			}
+
+			c.Set(responseKey, resp)
 		})
 
 	service.Route("GET", "/series/query",

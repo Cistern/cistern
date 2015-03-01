@@ -2,7 +2,10 @@ package device
 
 import (
 	"fmt"
+	"log"
+	"net"
 
+	"github.com/PreetamJinka/proto"
 	"github.com/PreetamJinka/sflow"
 
 	"github.com/PreetamJinka/cistern/state/metrics"
@@ -72,4 +75,92 @@ func (d *Device) processGenericInterfaceCounters(c sflow.GenericInterfaceCounter
 	d.updateAndEmit(fmt.Sprintf("if%d.%s", c.Index, "multicast_packets_out"), metrics.TypeDerivative, c.OutMulticastPkts)
 	d.updateAndEmit(fmt.Sprintf("if%d.%s", c.Index, "broadcast_packets_out"), metrics.TypeDerivative, c.OutBroadcastPkts)
 	d.updateAndEmit(fmt.Sprintf("if%d.%s", c.Index, "errors_out"), metrics.TypeDerivative, c.OutErrors)
+}
+
+func (d *Device) processRawPacketFlow(c sflow.RawPacketFlow) {
+	sampleBytes := c.Header
+
+	ethernetPacket, err := proto.DecodeEthernet(sampleBytes)
+	if err != nil {
+		log.Println("DecodeEthernet:", err)
+		return
+	}
+
+	var (
+		protocol    uint8
+		protocolStr = ""
+
+		sourceAddr net.IP
+		destAddr   net.IP
+
+		sourcePort uint16
+		destPort   uint16
+
+		length uint16
+	)
+
+	var ipPayload []byte
+
+	switch ethernetPacket.EtherType {
+	case 0x0800:
+		ipv4Packet, err := proto.DecodeIPv4(ethernetPacket.Payload)
+		if err != nil {
+			log.Println("DecodeIPv4:", err)
+			return
+		}
+
+		sourceAddr = ipv4Packet.Source
+		destAddr = ipv4Packet.Destination
+		ipPayload = ipv4Packet.Payload
+
+		protocol = ipv4Packet.Protocol
+
+		length = ipv4Packet.Length
+
+	case 0x86dd:
+		ipv6Packet, err := proto.DecodeIPv6(ethernetPacket.Payload)
+		if err != nil {
+			log.Println("DecodeIPv6:", err)
+			return
+		}
+
+		sourceAddr = ipv6Packet.Source
+		destAddr = ipv6Packet.Destination
+		ipPayload = ipv6Packet.Payload
+
+		protocol = ipv6Packet.NextHeader
+
+		length = ipv6Packet.Length
+	}
+
+	switch protocol {
+	case 0x6:
+		tcpPacket, err := proto.DecodeTCP(ipPayload)
+		if err != nil {
+			log.Println("DecodeTCP:", err)
+			return
+		}
+
+		sourcePort = tcpPacket.SourcePort
+		destPort = tcpPacket.DestinationPort
+
+		protocolStr = "TCP"
+
+	case 0x11:
+		udpPacket, err := proto.DecodeUDP(ipPayload)
+		if err != nil {
+			log.Println("DecodeUDP:", err)
+			return
+		}
+
+		sourcePort = udpPacket.SourcePort
+		destPort = udpPacket.DestinationPort
+
+		protocolStr = "UDP"
+	}
+
+	if sourcePort+destPort > 0 {
+		d.topTalkers.Update(protocolStr, sourceAddr, destAddr, int(sourcePort), int(destPort), int(length))
+		log.Printf("[%s] %v:%d -> %v:%d (%d bytes)", protocolStr, sourceAddr, sourcePort, destAddr, destPort, length)
+	}
 }

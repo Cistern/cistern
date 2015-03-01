@@ -9,6 +9,7 @@ import (
 	"github.com/PreetamJinka/sflow"
 	"github.com/PreetamJinka/snmp"
 
+	"github.com/PreetamJinka/cistern/state/flows"
 	"github.com/PreetamJinka/cistern/state/metrics"
 	"github.com/PreetamJinka/cistern/state/series"
 )
@@ -38,6 +39,7 @@ type Device struct {
 
 	snmpSession    *snmp.Session
 	metricRegistry *metrics.MetricRegistry
+	topTalkers     *flows.TopTalkers
 
 	Inbound  chan sflow.Datagram
 	outbound chan series.Observation
@@ -124,6 +126,10 @@ func (d *Device) Hostname() string {
 	return d.hostname
 }
 
+func (d *Device) TopTalkers() *flows.TopTalkers {
+	return d.topTalkers
+}
+
 func (d *Device) handleFlows() {
 
 	log.Printf("[Device %v] Handling flows", d.ip)
@@ -149,6 +155,11 @@ func (d *Device) processFlowRecord(r sflow.Record) {
 		d.processHostNetCounters(r.(sflow.HostNetCounters))
 	case sflow.GenericInterfaceCounters:
 		d.processGenericInterfaceCounters(r.(sflow.GenericInterfaceCounters))
+	case sflow.RawPacketFlow:
+		if d.topTalkers == nil {
+			d.topTalkers = flows.NewTopTalkers(time.Second * 30)
+		}
+		d.processRawPacketFlow(r.(sflow.RawPacketFlow))
 	}
 }
 

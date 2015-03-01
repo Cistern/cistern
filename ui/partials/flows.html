@@ -1,1 +1,20 @@
 <h1>Flows</h1>
+
+<h2>Top By Bytes</h2>
+<table class='table' ng-repeat='order in flows'>
+	<tr>
+		<th>Protocol</th>
+		<th>Source</th>
+		<th>Destination</th>
+		<th>Bytes/s</th>
+		<th>Packets/s</th>
+	</tr>
+
+	<tr ng-repeat='flow in order'>
+		<td>{{flow.protocol}}</td>
+		<td>{{flow.source}}:{{flow.sourcePort}}</td>
+		<td>{{flow.destination}}:{{flow.destinationPort}}</td>
+		<td>{{flow.bytesPerSecond}}</td>
+		<td>{{flow.packetsPerSecond}}</td>
+	</tr>
+</table>

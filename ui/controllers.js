@@ -1,4 +1,5 @@
 var cisternURL = 'http://localhost:8080'
+var flowURL = 'http://localhost:8080/devices/127.0.0.1/flows'
 
 function DevicesCtrl($scope, $http) {
   $http.get(cisternURL+'/devices/').then(function(response) {
@@ -39,6 +40,10 @@ function DevicesCtrl($scope, $http) {
   }
 }
 
-function FlowsCtrl() {
-
+function FlowsCtrl($scope, $http) {
+  $http.get(flowURL).then(function(response) {
+    if (response.status == 200) {
+      $scope.flows = response.data.data;     
+    }
+  });
 }

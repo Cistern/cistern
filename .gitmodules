@@ -1,9 +1,0 @@
-[submodule "proto/sflow"]
-	path = net/sflow
-	url = git://github.com/PreetamJinka/sflow.git
-[submodule "net/proto"]
-	path = net/proto
-	url = git@github.com:PreetamJinka/proto.git
-[submodule "net/snmp"]
-	path = net/snmp
-	url = git@github.com:PreetamJinka/snmp.git

@@ -32,7 +32,7 @@ type Flow struct {
 	packets uint64
 
 	BytesPerSecond   float32 `json:"bytesPerSecond"`
-	PacketsPerSecond float32 `json:"packetsPerSecond`
+	PacketsPerSecond float32 `json:"packetsPerSecond"`
 
 	lastUpdated time.Time
 }

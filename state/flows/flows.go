@@ -2,7 +2,6 @@ package flows
 
 import (
 	"bytes"
-	"log"
 	"net"
 	"sort"
 	"sync"
@@ -128,7 +127,6 @@ func (t *TopTalkers) Update(protocol string,
 
 	flow.lastUpdated = time.Now()
 	t.flows[key] = flow
-	log.Printf("%+#v", flow)
 }
 
 func (t *TopTalkers) ByBytes() []Flow {
@@ -140,7 +138,7 @@ func (t *TopTalkers) ByBytes() []Flow {
 		flows = append(flows, flow)
 	}
 
-	sort.Sort(byBytes(flows))
+	sort.Sort(sort.Reverse(byBytes(flows)))
 	return flows
 }
 
@@ -153,7 +151,7 @@ func (t *TopTalkers) ByPackets() []Flow {
 		flows = append(flows, flow)
 	}
 
-	sort.Sort(byPackets(flows))
+	sort.Sort(sort.Reverse(byPackets(flows)))
 	return flows
 }
 

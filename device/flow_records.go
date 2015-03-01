@@ -161,6 +161,7 @@ func (d *Device) processRawPacketFlow(c sflow.RawPacketFlow) {
 
 	if sourcePort+destPort > 0 {
 		d.topTalkers.Update(protocolStr, sourceAddr, destAddr, int(sourcePort), int(destPort), int(length))
-		log.Printf("[%s] %v:%d -> %v:%d (%d bytes)", protocolStr, sourceAddr, sourcePort, destAddr, destPort, length)
+		log.Printf("[Packet flow] [%s] %v:%d -> %v:%d (%d bytes)",
+			protocolStr, sourceAddr, sourcePort, destAddr, destPort, length)
 	}
 }

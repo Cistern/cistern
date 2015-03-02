@@ -132,6 +132,10 @@ func (s *APIServer) Run() {
 		"Lists metrics for a device",
 		s.querySeriesRoute())
 
+	service.Route("POST", "/series/query",
+		"Lists metrics for a device",
+		s.querySeriesRoute())
+
 	http.Handle("/", service)
 
 	go http.ListenAndServe(s.addr, nil)

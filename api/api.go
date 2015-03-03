@@ -128,9 +128,11 @@ func (s *APIServer) Run() {
 			c.Set(responseKey, resp)
 		})
 
-	service.Route("GET", "/series/query",
-		"Lists metrics for a device",
-		s.querySeriesRoute())
+	service.Route("OPTIONS", "/series/query",
+		"Accepts an OPTIONS request",
+		func(w http.ResponseWriter, r *http.Request) {
+			// Doesn't do anything
+		})
 
 	service.Route("POST", "/series/query",
 		"Lists metrics for a device",

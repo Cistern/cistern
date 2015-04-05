@@ -140,6 +140,10 @@ func (t *TopTalkers) ByBytes() []Flow {
 
 	flows := make([]Flow, 0, len(t.flows))
 	for _, flow := range t.flows {
+		if flow.packets < 2 {
+			continue
+		}
+
 		flows = append(flows, flow)
 	}
 
@@ -153,6 +157,10 @@ func (t *TopTalkers) ByPackets() []Flow {
 
 	flows := make([]Flow, 0, len(t.flows))
 	for _, flow := range t.flows {
+		if flow.packets < 2 {
+			continue
+		}
+
 		flows = append(flows, flow)
 	}
 

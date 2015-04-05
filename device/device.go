@@ -165,10 +165,12 @@ func (d *Device) processFlowRecord(r sflow.Record) {
 
 func (d *Device) updateAndEmit(metric string, metricType metrics.MetricType, v interface{}) {
 	value := d.metricRegistry.Update(metric, metricType, v)
-	d.outbound <- series.Observation{
-		Source:    d.ip.String(),
-		Metric:    metric,
-		Timestamp: time.Now().Unix(),
-		Value:     float64(value),
+	o := series.Observation{
+		Source: d.ip.String(),
+		Metric: metric,
 	}
+	o.Timestamp = time.Now().Unix()
+	o.Value = float64(value)
+
+	d.outbound <- o
 }

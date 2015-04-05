@@ -31,6 +31,7 @@ func (s *APIServer) Run() {
 
 	service.AddPre(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", r.Header.Get("Access-Control-Request-Headers"))
 	})
 
 	service.AddPost(func(c siesta.Context, w http.ResponseWriter, r *http.Request, q func()) {
@@ -128,7 +129,13 @@ func (s *APIServer) Run() {
 			c.Set(responseKey, resp)
 		})
 
-	service.Route("GET", "/series/query",
+	service.Route("OPTIONS", "/series/query",
+		"Accepts an OPTIONS request",
+		func(w http.ResponseWriter, r *http.Request) {
+			// Doesn't do anything
+		})
+
+	service.Route("POST", "/series/query",
 		"Lists metrics for a device",
 		s.querySeriesRoute())
 

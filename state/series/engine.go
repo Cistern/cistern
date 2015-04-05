@@ -3,6 +3,7 @@ package series
 import (
 	"log"
 	"time"
+	"unsafe"
 
 	"github.com/PreetamJinka/catena"
 )
@@ -13,10 +14,12 @@ type Engine struct {
 }
 
 func NewEngine(baseDir string) (*Engine, error) {
-	db, err := catena.OpenDB(baseDir)
+	db, err := catena.OpenDB(baseDir, 3600, 24*90)
 
 	if err != nil {
-		db, err = catena.NewDB(baseDir)
+		log.Println(err)
+
+		db, err = catena.NewDB(baseDir, 3600, 24*90)
 		if err != nil {
 			return nil, err
 		}
@@ -61,10 +64,5 @@ func (engine *Engine) handleInbound() {
 
 func (engine *Engine) writeObservations(obs []Observation) {
 	log.Printf("[Series engine] Writing %d observations", len(obs))
-
-	rows := make(catena.Rows, len(obs))
-	for i, observation := range obs {
-		rows[i] = catena.Row(observation)
-	}
-	engine.DB.InsertRows(rows)
+	engine.DB.InsertRows(*(*[]catena.Row)(unsafe.Pointer(&obs)))
 }

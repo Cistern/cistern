@@ -68,7 +68,7 @@ func main() {
 		}
 	}
 
-	engine, err := series.NewEngine("/tmp/cistern/series")
+	engine, err := series.NewEngine("/tmp/cistern/catena")
 	if err != nil {
 		log.Fatal(err)
 	}

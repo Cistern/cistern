@@ -1,6 +1,12 @@
 var cisternURL = 'http://localhost:8080'
 var flowURL = 'http://localhost:8080/devices/127.0.0.1/flows'
 
+function NavigationCtrl($scope, $location) {
+  $scope.isActive = function(viewLocation) {
+    return viewLocation === $location.path();
+  }
+}
+
 function DevicesCtrl($scope, $http) {
   $http.get(cisternURL+'/devices/').then(function(response) {
     if (response.status == 200) {

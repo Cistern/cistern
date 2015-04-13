@@ -29,11 +29,11 @@
             </button>
             <a class="navbar-brand" href="#/">Cistern</a>
           </div>
-          <div id="navbar" class="navbar-collapse collapse">
+          <div id="navbar" class="navbar-collapse collapse" ng-controller='NavigationController'>
             <ul class="nav navbar-nav">
-              <li class="active"><a href="#/devices/">Devices</a></li>
-              <li><a href="#/flows/">Flows</a></li>
-              <li><a href="#/detections/">Detections</a></li>
+              <li ng-class="{ active: isActive('/devices') }"><a href="#/devices/">Devices</a></li>
+              <li ng-class="{ active: isActive('/flows') }"><a href="#/flows/">Flows</a></li>
+              <li ng-class="{ active: isActive('/detections') }"><a href="#/detections/">Detections</a></li>
             </ul>
           </div><!--/.nav-collapse -->
         </div><!--/.container-fluid -->

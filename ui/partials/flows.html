@@ -1,7 +1,7 @@
 <h1>Flows</h1>
 
 <div ng-repeat='(ordering, order) in flows'>
-	<h2>Ranked {{ordering}}</h2>
+	<h2>Ranked {{ordering | flowOrdering}}</h2>
 	<table class='table'>
 		<tr>
 			<th>Protocol</th>

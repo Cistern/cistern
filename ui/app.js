@@ -5,8 +5,7 @@ var cisternApp = angular.module('cisternUI', [
 .config(
   function ($routeProvider) {
     $routeProvider.when('/', {
-      templateUrl: 'partials/devices.html',
-      controller: 'DevicesCtrl'
+      redirectTo: '/devices'
     }).when('/devices', {
       templateUrl: 'partials/devices.html',
       controller: 'DevicesCtrl'
@@ -18,4 +17,18 @@ var cisternApp = angular.module('cisternUI', [
 )
 
 .controller('DevicesCtrl', DevicesCtrl)
-.controller('FlowsCtrl', FlowsCtrl);
+.controller('FlowsCtrl', FlowsCtrl)
+.controller('NavigationController', NavigationCtrl)
+
+.filter('flowOrdering', function() {
+  return function(input) {
+    switch(input) {
+    case 'byBytes':
+      return 'by bytes';
+    case 'byPackets':
+      return 'by packets';
+    }
+
+    return "";
+  };
+});

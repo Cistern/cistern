@@ -1,0 +1,18 @@
+
+.device-container {
+	clear: both;
+}
+
+.device-ip {
+	font-weight: bold;
+}
+
+.chart-desc {
+	font-weight: bold;
+}
+
+.plot-metric {
+	width: 300px;
+	margin: 10px;
+	float: left;
+}

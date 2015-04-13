@@ -1,6 +1,21 @@
 var cisternURL = 'http://localhost:8080'
 var flowURL = 'http://localhost:8080/devices/127.0.0.1/flows'
 
+var templateDefinitions = {
+  "CPU":
+  {
+    "desc": "CPU usage",
+    "metrics": ['cpu.idle', 'cpu.user', 'cpu.sys', 'cpu.nice', 'cpu.softintr', 'cpu.intr', 'cpu.wio']
+  },
+
+  "Disk":
+  {
+    "desc": "Disk IO",
+    "metrics": ['disk.bytes_written', 'disk.bytes_read'],
+    "factors": [-1, 1]
+  }
+};
+
 function NavigationCtrl($scope, $location) {
   $scope.isActive = function(viewLocation) {
     return viewLocation === $location.path();
@@ -8,6 +23,10 @@ function NavigationCtrl($scope, $location) {
 }
 
 function DevicesCtrl($scope, $http) {
+  $scope.charts = [
+    "CPU", "Disk"
+  ];
+
   $http.get(cisternURL+'/devices/').then(function(response) {
     if (response.status == 200) {
       $scope.devices = response.data.data;
@@ -26,24 +45,16 @@ function DevicesCtrl($scope, $http) {
     }
   });
 
-  $scope.loadMetrics = function(device) {
-    $http.get(cisternURL + '/devices/' + device.ip + '/metrics').then(function(response) {
-      if (response.status == 200) {
-        device.metrics = response.data.data;
-        device.metrics.sort(function(a, b) {
-          if (a.name < b.name) {
-            return -1;
-          }
+  $scope.loadChart = function(device, chart) {
+    console.log(device.ip, chart);
+    var templDef = templateDefinitions[chart];
+    templDef.source = device.ip;
 
-          if (a.name > b.name) {
-            return 1;
-          }
+    console.log(templDef);
 
-          return 0;
-          });
-      }
-    });
-  }
+    device.charts = device.charts || [];
+    device.charts.push(templDef);
+  };
 }
 
 function FlowsCtrl($scope, $http) {

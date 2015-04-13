@@ -1,12 +1,15 @@
 <h1>Devices</h1>
 
-<ul class='device-list'>
-  <li ng-repeat='device in devices'>
-    {{device.ip}}
+<div class='devicesContainer'>
+  <div class='device-container' ng-repeat='device in devices'>
+    <span class='device-ip'>{{device.ip}}</span>
 
-    <button class='btn' ng-click='loadMetrics(device)'>Metrics</button>
-    <ul>
-      <li ng-repeat='metric in device.metrics'>{{metric.name}}</li>
-    </ul>
-  </li>
-</ul>
+    <div>
+      <button class='btn btn-xs' ng-repeat='chart in charts' ng-click='loadChart(device, chart)'>{{chart}}</button>
+      <div ng-repeat='chart in device.charts'>
+        <ui-chart source="{{chart.source}}" metrics="{{chart.metrics}}" factors="{{chart.factors}}"
+          desc="{{chart.desc}}" />
+      </div>
+    </div>
+  </div>
+</div>

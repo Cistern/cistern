@@ -84,7 +84,7 @@ cisternApp.directive('uiChart', function() {
 
           var points = s['points'];
           for(var j in points) {
-            xCol.push(points[j].timestamp);
+            xCol.push(new Date(1000*points[j].timestamp));
             yCol.push(points[j].value * factor);
           }
 
@@ -153,7 +153,7 @@ cisternApp.directive('uiChart', function() {
         });
       }
 
-      var timePeriod = 3600;
+      var timePeriod = 86400;
 
       var rows = [];
       for(var j in scope.metrics) {
@@ -172,7 +172,7 @@ cisternApp.directive('uiChart', function() {
       };
 
       $.ajax({
-        url: cisternURL+'/series/query?pointWidth=' + 10,
+        url: cisternURL+'/series/query?pointWidth=' + 288,
         data: JSON.stringify(rows),
         success: closure({source: scope.source, desc: scope.desc, metrics: scope.metrics, factors: scope.factors}, el),
         contentType: "application/json",

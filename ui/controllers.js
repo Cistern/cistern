@@ -13,6 +13,12 @@ var templateDefinitions = {
     "desc": "Disk IO",
     "metrics": ['disk.bytes_written', 'disk.bytes_read'],
     "factors": [-1, 1]
+  },
+
+  "Memory":
+  {
+    "desc": "Memory usage",
+    "metrics": ['mem.free', 'mem.shared', 'mem.buffers', 'mem.cached']
   }
 };
 
@@ -24,7 +30,7 @@ function NavigationCtrl($scope, $location) {
 
 function DevicesCtrl($scope, $http) {
   $scope.charts = [
-    "CPU", "Disk"
+    "CPU", "Disk", "Memory"
   ];
 
   $http.get(cisternURL+'/devices/').then(function(response) {

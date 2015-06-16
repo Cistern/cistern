@@ -5,7 +5,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/PreetamJinka/catena"
+	"github.com/Preetam/catena"
 )
 
 type Engine struct {

@@ -1,7 +1,7 @@
 package decode
 
 import (
-	"github.com/PreetamJinka/sflow"
+	"github.com/Preetam/sflow"
 
 	"bytes"
 	"log"

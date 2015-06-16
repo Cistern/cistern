@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/PreetamJinka/catena"
+	"github.com/Preetam/catena"
 	"github.com/VividCortex/siesta"
 )
 

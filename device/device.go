@@ -6,12 +6,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/PreetamJinka/sflow"
-	"github.com/PreetamJinka/snmp"
+	"github.com/Preetam/sflow"
+	"github.com/Preetam/snmp"
 
-	"github.com/PreetamJinka/cistern/state/flows"
-	"github.com/PreetamJinka/cistern/state/metrics"
-	"github.com/PreetamJinka/cistern/state/series"
+	"github.com/Preetam/cistern/state/flows"
+	"github.com/Preetam/cistern/state/metrics"
+	"github.com/Preetam/cistern/state/series"
 )
 
 type deviceType int
@@ -145,8 +145,8 @@ func (d *Device) handleFlows() {
 
 func (d *Device) processFlowRecord(r sflow.Record) {
 	switch r.(type) {
-	case sflow.HostCpuCounters:
-		d.processHostCPUCounters(r.(sflow.HostCpuCounters))
+	case sflow.HostCPUCounters:
+		d.processHostCPUCounters(r.(sflow.HostCPUCounters))
 	case sflow.HostMemoryCounters:
 		d.processHostMemoryCounters(r.(sflow.HostMemoryCounters))
 	case sflow.HostDiskCounters:

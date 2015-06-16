@@ -7,9 +7,9 @@ import (
 
 	"github.com/VividCortex/siesta"
 
-	"github.com/PreetamJinka/cistern/device"
-	"github.com/PreetamJinka/cistern/state/flows"
-	"github.com/PreetamJinka/cistern/state/series"
+	"github.com/Preetam/cistern/device"
+	"github.com/Preetam/cistern/state/flows"
+	"github.com/Preetam/cistern/state/series"
 )
 
 type APIServer struct {

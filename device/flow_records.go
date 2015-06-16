@@ -5,20 +5,20 @@ import (
 	"log"
 	"net"
 
-	"github.com/PreetamJinka/proto"
-	"github.com/PreetamJinka/sflow"
+	"github.com/Preetam/proto"
+	"github.com/Preetam/sflow"
 
-	"github.com/PreetamJinka/cistern/state/metrics"
+	"github.com/Preetam/cistern/state/metrics"
 )
 
-func (d *Device) processHostCPUCounters(c sflow.HostCpuCounters) {
-	d.updateAndEmit("cpu.user", metrics.TypeDerivative, c.CpuUser)
-	d.updateAndEmit("cpu.nice", metrics.TypeDerivative, c.CpuNice)
-	d.updateAndEmit("cpu.sys", metrics.TypeDerivative, c.CpuSys)
-	d.updateAndEmit("cpu.idle", metrics.TypeDerivative, c.CpuIdle)
-	d.updateAndEmit("cpu.wio", metrics.TypeDerivative, c.CpuWio)
-	d.updateAndEmit("cpu.intr", metrics.TypeDerivative, c.CpuIntr)
-	d.updateAndEmit("cpu.softintr", metrics.TypeDerivative, c.CpuSoftIntr)
+func (d *Device) processHostCPUCounters(c sflow.HostCPUCounters) {
+	d.updateAndEmit("cpu.user", metrics.TypeDerivative, c.CPUUser)
+	d.updateAndEmit("cpu.nice", metrics.TypeDerivative, c.CPUNice)
+	d.updateAndEmit("cpu.sys", metrics.TypeDerivative, c.CPUSys)
+	d.updateAndEmit("cpu.idle", metrics.TypeDerivative, c.CPUIdle)
+	d.updateAndEmit("cpu.wio", metrics.TypeDerivative, c.CPUWio)
+	d.updateAndEmit("cpu.intr", metrics.TypeDerivative, c.CPUIntr)
+	d.updateAndEmit("cpu.softintr", metrics.TypeDerivative, c.CPUSoftIntr)
 }
 
 func (d *Device) processHostMemoryCounters(c sflow.HostMemoryCounters) {
@@ -53,27 +53,27 @@ func (d *Device) processHostDiskCounters(c sflow.HostDiskCounters) {
 func (d *Device) processHostNetCounters(c sflow.HostNetCounters) {
 	d.updateAndEmit("net.bytes_in", metrics.TypeDerivative, c.BytesIn)
 	d.updateAndEmit("net.packets_in", metrics.TypeDerivative, c.PacketsIn)
-	d.updateAndEmit("net.errs_in", metrics.TypeDerivative, c.ErrsIn)
+	d.updateAndEmit("net.errs_in", metrics.TypeDerivative, c.ErrorsIn)
 	d.updateAndEmit("net.drops_in", metrics.TypeDerivative, c.DropsIn)
 
 	d.updateAndEmit("net.bytes_out", metrics.TypeDerivative, c.BytesOut)
 	d.updateAndEmit("net.packets_out", metrics.TypeDerivative, c.PacketsOut)
-	d.updateAndEmit("net.errs_out", metrics.TypeDerivative, c.ErrsOut)
+	d.updateAndEmit("net.errs_out", metrics.TypeDerivative, c.ErrorsOut)
 	d.updateAndEmit("net.drops_out", metrics.TypeDerivative, c.DropsOut)
 }
 
 func (d *Device) processGenericInterfaceCounters(c sflow.GenericInterfaceCounters) {
 	d.updateAndEmit(fmt.Sprintf("if%d.%s", c.Index, "octets_in"), metrics.TypeDerivative, c.InOctets)
-	d.updateAndEmit(fmt.Sprintf("if%d.%s", c.Index, "unicast_packets_in"), metrics.TypeDerivative, c.InUcastPkts)
-	d.updateAndEmit(fmt.Sprintf("if%d.%s", c.Index, "multicast_packets_in"), metrics.TypeDerivative, c.InMulticastPkts)
-	d.updateAndEmit(fmt.Sprintf("if%d.%s", c.Index, "broadcast_packets_in"), metrics.TypeDerivative, c.InBroadcastPkts)
+	d.updateAndEmit(fmt.Sprintf("if%d.%s", c.Index, "unicast_packets_in"), metrics.TypeDerivative, c.InUnicastPackets)
+	d.updateAndEmit(fmt.Sprintf("if%d.%s", c.Index, "multicast_packets_in"), metrics.TypeDerivative, c.InMulticastPackets)
+	d.updateAndEmit(fmt.Sprintf("if%d.%s", c.Index, "broadcast_packets_in"), metrics.TypeDerivative, c.InBroadcastPackets)
 	d.updateAndEmit(fmt.Sprintf("if%d.%s", c.Index, "errors_in"), metrics.TypeDerivative, c.InErrors)
-	d.updateAndEmit(fmt.Sprintf("if%d.%s", c.Index, "unknown_proto_in"), metrics.TypeDerivative, c.InUnknownProtos)
+	d.updateAndEmit(fmt.Sprintf("if%d.%s", c.Index, "unknown_proto_in"), metrics.TypeDerivative, c.InUnknownProtocols)
 
 	d.updateAndEmit(fmt.Sprintf("if%d.%s", c.Index, "octets_out"), metrics.TypeDerivative, c.OutOctets)
-	d.updateAndEmit(fmt.Sprintf("if%d.%s", c.Index, "unicast_packets_out"), metrics.TypeDerivative, c.OutUcastPkts)
-	d.updateAndEmit(fmt.Sprintf("if%d.%s", c.Index, "multicast_packets_out"), metrics.TypeDerivative, c.OutMulticastPkts)
-	d.updateAndEmit(fmt.Sprintf("if%d.%s", c.Index, "broadcast_packets_out"), metrics.TypeDerivative, c.OutBroadcastPkts)
+	d.updateAndEmit(fmt.Sprintf("if%d.%s", c.Index, "unicast_packets_out"), metrics.TypeDerivative, c.OutUnicastPackets)
+	d.updateAndEmit(fmt.Sprintf("if%d.%s", c.Index, "multicast_packets_out"), metrics.TypeDerivative, c.OutMulticastPackets)
+	d.updateAndEmit(fmt.Sprintf("if%d.%s", c.Index, "broadcast_packets_out"), metrics.TypeDerivative, c.OutBroadcastPackets)
 	d.updateAndEmit(fmt.Sprintf("if%d.%s", c.Index, "errors_out"), metrics.TypeDerivative, c.OutErrors)
 }
 

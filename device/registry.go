@@ -4,9 +4,9 @@ import (
 	"net"
 	"sync"
 
-	"github.com/PreetamJinka/snmp"
+	"github.com/Preetam/snmp"
 
-	"github.com/PreetamJinka/cistern/state/series"
+	"github.com/Preetam/cistern/state/series"
 )
 
 // A Registry is a device registry.

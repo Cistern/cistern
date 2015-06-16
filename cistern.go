@@ -9,13 +9,13 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/PreetamJinka/udpchan"
+	"github.com/Preetam/udpchan"
 
-	"github.com/PreetamJinka/cistern/api"
-	"github.com/PreetamJinka/cistern/config"
-	"github.com/PreetamJinka/cistern/decode"
-	"github.com/PreetamJinka/cistern/device"
-	"github.com/PreetamJinka/cistern/state/series"
+	"github.com/Preetam/cistern/api"
+	"github.com/Preetam/cistern/config"
+	"github.com/Preetam/cistern/decode"
+	"github.com/Preetam/cistern/device"
+	"github.com/Preetam/cistern/state/series"
 )
 
 var (

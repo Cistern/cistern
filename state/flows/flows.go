@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/PreetamJinka/cistern/state/metrics"
+	"github.com/Preetam/cistern/state/metrics"
 )
 
 const (

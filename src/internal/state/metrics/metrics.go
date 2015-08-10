@@ -41,7 +41,6 @@ func getFloat32Value(i interface{}) float32 {
 	case float64:
 		return float32(n)
 	}
-
 	return i.(float32)
 }
 

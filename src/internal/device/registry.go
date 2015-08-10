@@ -5,7 +5,6 @@ import (
 	"net"
 	"sync"
 
-	"internal/device/class"
 	"internal/message"
 )
 
@@ -15,27 +14,17 @@ type mapIP [16]byte
 
 type Registry struct {
 	sync.Mutex
-	devices  map[mapIP]*Device
-	messages chan *message.Message
+	devices                map[mapIP]*Device
+	outboundGlobalMessages chan *message.Message
 }
 
-func NewRegistry() *Registry {
+func NewRegistry(outbound chan *message.Message) *Registry {
 	r := &Registry{
-		Mutex:    sync.Mutex{},
-		devices:  map[mapIP]*Device{},
-		messages: make(chan *message.Message, 1),
+		Mutex:                  sync.Mutex{},
+		devices:                map[mapIP]*Device{},
+		outboundGlobalMessages: outbound,
 	}
-	go r.processMessages()
 	return r
-}
-
-func (r *Registry) processMessages() {
-	for m := range r.messages {
-		if !m.Global {
-			panic("registry received non-global message")
-		}
-		// TODO
-	}
 }
 
 func (r *Registry) RegisterDevice(hostname string, address net.IP) (*Device, error) {
@@ -46,9 +35,9 @@ func (r *Registry) RegisterDevice(hostname string, address net.IP) (*Device, err
 	d := &Device{
 		hostname:         hostname,
 		address:          address,
-		classes:          map[string]class.Class{},
-		internalMessages: make(chan *message.Message, 1),
-		globalMessages:   r.messages,
+		classes:          map[string]message.Class{},
+		internalMessages: make(chan *message.Message, 100),
+		globalMessages:   r.outboundGlobalMessages,
 	}
 	go d.processMessages()
 	r.devices[key] = d

@@ -9,7 +9,7 @@ import (
 	sflowProto "github.com/Preetam/sflow"
 
 	"internal/device"
-	commSflow "internal/device/class/comm/sflow"
+	commSFlow "internal/device/class/comm/sflow"
 	"internal/net/sflow"
 )
 
@@ -33,18 +33,18 @@ func NewService(conf Config, deviceRegistry *device.Registry) (*Service, error) 
 	s := &Service{
 		lock:                  sync.Mutex{},
 		deviceRegistry:        deviceRegistry,
-		sflowDatagrams:        make(chan *sflowProto.Datagram),
+		sflowDatagrams:        make(chan *sflowProto.Datagram, 1),
 		deviceDatagramInbound: map[*device.Device]chan *sflowProto.Datagram{},
 	}
 	_, err := sflow.NewDecoder(conf.SFlowAddr, s.sflowDatagrams)
 	if err != nil {
 		return nil, err
 	}
-	go s.dispatchSflowDatagrams()
+	go s.dispatchSFlowDatagrams()
 	return s, nil
 }
 
-func (s *Service) dispatchSflowDatagrams() {
+func (s *Service) dispatchSFlowDatagrams() {
 	for dgram := range s.sflowDatagrams {
 		log.Printf("received a datagram from %v", dgram.IpAddress)
 		s.deviceRegistry.Lock()
@@ -62,7 +62,7 @@ func (s *Service) dispatchSflowDatagrams() {
 		if !dev.HasClass("sflow") {
 			log.Println(dev, "needs class \"sflow\".")
 			c := make(chan *sflowProto.Datagram, 1)
-			dev.RegisterClass(commSflow.NewClass(dgram.IpAddress, c, dev.Messages()))
+			dev.RegisterClass(commSFlow.NewClass(dgram.IpAddress, c, dev.Messages()))
 			s.deviceDatagramInbound[dev] = c
 		}
 		select {

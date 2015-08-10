@@ -8,8 +8,10 @@ import (
 	"log"
 	"os"
 
+	"internal/clock"
 	"internal/config"
 	"internal/device"
+	"internal/message"
 	"internal/net"
 	"internal/state/series"
 )
@@ -21,6 +23,10 @@ var (
 	seriesDataDir   = "/opt/cistern/series"
 	commitSHA       = ""
 )
+
+func init() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+}
 
 func main() {
 	// Flags
@@ -38,7 +44,11 @@ func main() {
 	flag.Parse()
 
 	if *showVersion {
-		fmt.Println("Cistern version", version, "[ "+commitSHA+" ]")
+		shaString := ""
+		if commitSHA != "" {
+			shaString = " (" + commitSHA + ")"
+		}
+		fmt.Printf("Cistern version %s%s", version, shaString)
 		os.Exit(0)
 	}
 
@@ -48,11 +58,12 @@ func main() {
 	}
 
 	log.Printf("Cistern version %s starting", version)
-	log.Printf("  Attempting to load configuration file at %s", configFile)
+	clock.Run()
 
+	log.Printf("  Attempting to load configuration file at %s", configFile)
 	conf, err := config.Load(configFile)
 	if err != nil {
-		log.Printf("✗ Could not load configuration: %v", err)
+		log.Printf("✗ Could not load configuration: `%v`", err)
 	}
 
 	// Log the loaded config
@@ -75,7 +86,8 @@ func main() {
 
 	var _ = engine
 
-	registry := device.NewRegistry()
+	globalMessages := message.NewMessageChannel()
+	registry := device.NewRegistry(globalMessages)
 	_, err = net.NewService(net.DefaultConfig, registry)
 	if err != nil {
 		log.Fatalf("✗ failed to start network service: %v", err)

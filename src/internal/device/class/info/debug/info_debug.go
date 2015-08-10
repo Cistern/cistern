@@ -17,7 +17,7 @@ type Class struct {
 func NewClass(sourceAddress net.IP) *Class {
 	c := &Class{
 		sourceAddress: sourceAddress,
-		inbound:       make(chan *message.Message),
+		inbound:       message.NewMessageChannel(),
 	}
 	go c.handleMessages()
 	return c

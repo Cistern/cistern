@@ -1,7 +1,6 @@
 package host_counters
 
 import (
-	"fmt"
 	"net"
 
 	"github.com/Preetam/sflow"
@@ -19,7 +18,7 @@ type Class struct {
 func NewClass(sourceAddress net.IP, outbound chan *message.Message) *Class {
 	c := &Class{
 		sourceAddress: sourceAddress,
-		inbound:       make(chan *message.Message),
+		inbound:       message.NewMessageChannel(),
 		outbound:      outbound,
 	}
 	go c.handleMessages()
@@ -44,44 +43,23 @@ func (c *Class) OutboundMessages() chan *message.Message {
 
 func (c *Class) handleMessages() {
 	for m := range c.inbound {
-		fmt.Println("host_counters")
 		switch m.Type {
 		case "CPU":
 			cpuCounters := m.Content.(sflow.HostCPUCounters)
 			c.handleCPUCounters(cpuCounters)
+		default:
+			// Drop.
 		}
 	}
 }
 
 func (c *Class) handleCPUCounters(counters sflow.HostCPUCounters) {
-	str := fmt.Sprintf("Load: %0.2f %0.2f %0.2f\n"+
-		"Procs: %d %d\n"+
-		"CPU: %d %d\n"+
-		"Uptime: %d\n"+
-		"CPU: %dus %dni %dsy %did %dio %din %dsi %di %dcw %dst %dgu %dgn\n",
-		counters.Load1m,
-		counters.Load5m,
-		counters.Load15m,
-		counters.ProcessesRunning,
-		counters.ProcessesTotal,
-		counters.NumCPU,
-		counters.SpeedCPU,
-		counters.Uptime,
-		counters.CPUUser,
-		counters.CPUNice,
-		counters.CPUSys,
-		counters.CPUIdle,
-		counters.CPUWio,
-		counters.CPUIntr,
-		counters.CPUSoftIntr,
-		counters.Interrupts,
-		counters.ContextSwitches,
-		counters.CPUSteal,
-		counters.CPUGuest,
-		counters.CPUGuestNice,
-	)
-	c.outbound <- &message.Message{
+	select {
+	case c.outbound <- &message.Message{
 		Class:   "debug",
-		Content: str,
+		Content: counters,
+	}:
+	default:
+		// Drop.
 	}
 }

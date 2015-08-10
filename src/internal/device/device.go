@@ -7,7 +7,6 @@ import (
 	"net"
 	"sync"
 
-	"internal/device/class"
 	"internal/device/class/info/debug"
 	"internal/device/class/info/host_counters"
 	"internal/message"
@@ -23,12 +22,12 @@ type Device struct {
 	hostname string
 	address  net.IP
 
-	classes          map[string]class.Class
+	classes          map[string]message.Class
 	internalMessages chan *message.Message
 	globalMessages   chan<- *message.Message
 }
 
-func (d *Device) RegisterClass(c class.Class) error {
+func (d *Device) RegisterClass(c message.Class) error {
 	if _, present := d.classes[c.Name()]; present {
 		return ErrClassNameRegistered
 	}
@@ -45,10 +44,18 @@ func (d *Device) Messages() chan *message.Message {
 	return d.internalMessages
 }
 
+// processMessages delivers messages from internal device classes to
+// other internal device classes, or escalates them to the global
+// channel.
 func (d *Device) processMessages() {
 	for m := range d.internalMessages {
 		if m.Global {
-			d.globalMessages <- m
+			// m is intended for a global class.
+			select {
+			case d.globalMessages <- m:
+			default:
+				// Drop.
+			}
 			continue
 		}
 		if !d.HasClass(m.Class) {
@@ -63,8 +70,12 @@ func (d *Device) processMessages() {
 			}
 		}
 		c := d.classes[m.Class]
-		if collector, ok := c.(class.Collector); ok {
-			collector.InboundMessages() <- m
+		if collector, ok := c.(message.Collector); ok {
+			select {
+			case collector.InboundMessages() <- m:
+			default:
+				// Drop.
+			}
 		}
 	}
 }

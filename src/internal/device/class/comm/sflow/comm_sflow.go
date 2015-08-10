@@ -4,6 +4,7 @@ import (
 	"net"
 
 	"github.com/Preetam/sflow"
+	"internal/clock"
 	"internal/message"
 )
 
@@ -42,33 +43,37 @@ func (c *Class) generateMessages() {
 		for _, sample := range dgram.Samples {
 			for _, record := range sample.GetRecords() {
 				switch record.(type) {
-				case sflow.HostCPUCounters:
-					c.outbound <- &message.Message{
-						Class:   "host-counters",
-						Type:    "CPU",
-						Content: record,
-					}
-				case sflow.HostMemoryCounters:
-					c.outbound <- &message.Message{
-						Class:   "host-counters",
-						Type:    "Memory",
-						Content: record,
-					}
-				case sflow.HostDiskCounters:
-					c.outbound <- &message.Message{
-						Class:   "host-counters",
-						Type:    "Disk",
-						Content: record,
-					}
-				case sflow.HostNetCounters:
-					c.outbound <- &message.Message{
-						Class:   "host-counters",
-						Type:    "Net",
-						Content: record,
-					}
+				case sflow.HostCPUCounters, sflow.HostMemoryCounters, sflow.HostDiskCounters,
+					sflow.HostNetCounters:
+					c.handleHostCounters(record)
 				default:
 				}
 			}
 		}
+	}
+}
+
+func (c *Class) handleHostCounters(record sflow.Record) {
+	m := &message.Message{
+		Class:     "host-counters",
+		Timestamp: clock.Time(),
+		Content:   record,
+	}
+	switch record.(type) {
+	case sflow.HostCPUCounters:
+		m.Type = "CPU"
+	case sflow.HostMemoryCounters:
+		m.Type = "Memory"
+	case sflow.HostDiskCounters:
+		m.Type = "Disk"
+	case sflow.HostNetCounters:
+		m.Type = "Net"
+	default:
+		return
+	}
+	select {
+	case c.outbound <- m:
+	default:
+		// Drop.
 	}
 }

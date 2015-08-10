@@ -14,9 +14,6 @@ type DerivativeState struct {
 	lastUpdated time.Time
 	// This is a uint64 because we want calculate
 	// derivatives accurately.
-	//
-	// When's the last time you saw a system
-	// counter that was a float?
 	prev  uint64
 	value float32
 }

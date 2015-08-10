@@ -1,3 +1,4 @@
-cistern
 *.swp
 *.swo
+bin
+pkg

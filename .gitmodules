@@ -1,0 +1,12 @@
+[submodule "vendor/src/github.com/Preetam/sflow"]
+	path = vendor/src/github.com/Preetam/sflow
+	url = https://github.com/Preetam/sflow.git
+[submodule "vendor/src/github.com/Preetam/udpchan"]
+	path = vendor/src/github.com/Preetam/udpchan
+	url = https://github.com/Preetam/udpchan.git
+[submodule "vendor/src/github.com/Preetam/catena"]
+	path = vendor/src/github.com/Preetam/catena
+	url = https://github.com/Preetam/catena.git
+[submodule "vendor/src/github.com/Preetam/snmp"]
+	path = vendor/src/github.com/Preetam/snmp
+	url = https://github.com/Preetam/snmp.git

@@ -47,6 +47,7 @@ func (c *Class) generateMessages() {
 					sflow.HostNetCounters:
 					c.handleHostCounters(record)
 				default:
+					// Unknown type. Drop.
 				}
 			}
 		}
@@ -71,9 +72,5 @@ func (c *Class) handleHostCounters(record sflow.Record) {
 	default:
 		return
 	}
-	select {
-	case c.outbound <- m:
-	default:
-		// Drop.
-	}
+	c.outbound <- m
 }

@@ -64,18 +64,14 @@ func (d *Device) processMessages() {
 			case host_counters.ClassName:
 				d.RegisterClass(host_counters.NewClass(d.address, d.internalMessages))
 			case debug.ClassName:
-				d.RegisterClass(debug.NewClass(d.address))
+				d.RegisterClass(debug.NewClass())
 			default:
 				continue
 			}
 		}
 		c := d.classes[m.Class]
-		if collector, ok := c.(message.Collector); ok {
-			select {
-			case collector.InboundMessages() <- m:
-			default:
-				// Drop.
-			}
+		if processor, ok := c.(message.Processor); ok {
+			processor.Process(m)
 		}
 	}
 }

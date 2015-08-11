@@ -2,25 +2,16 @@ package debug
 
 import (
 	"log"
-	"net"
 
 	"internal/message"
 )
 
 const ClassName = "debug"
 
-type Class struct {
-	sourceAddress net.IP
-	inbound       chan *message.Message
-}
+type Class struct{}
 
-func NewClass(sourceAddress net.IP) *Class {
-	c := &Class{
-		sourceAddress: sourceAddress,
-		inbound:       message.NewMessageChannel(),
-	}
-	go c.handleMessages()
-	return c
+func NewClass() *Class {
+	return &Class{}
 }
 
 func (c *Class) Name() string {
@@ -31,12 +22,6 @@ func (c *Class) Category() string {
 	return "info"
 }
 
-func (c *Class) InboundMessages() chan *message.Message {
-	return c.inbound
-}
-
-func (c *Class) handleMessages() {
-	for m := range c.inbound {
-		log.Println(m)
-	}
+func (c *Class) Process(m *message.Message) {
+	log.Println(m)
 }

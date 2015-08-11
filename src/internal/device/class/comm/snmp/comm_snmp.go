@@ -8,9 +8,8 @@ import (
 const ClassName = "snmp"
 
 type Class struct {
-	session  *snmp.Session
-	inbound  chan *message.Message
-	outbound chan *message.Message
+	session *snmp.Session
+	inbound chan *message.Message
 }
 
 func (c *Class) Name() string {
@@ -23,8 +22,4 @@ func (c *Class) Category() string {
 
 func (c *Class) InboundMessages() chan *message.Message {
 	return c.inbound
-}
-
-func (c *Class) OutboundMessages() chan *message.Message {
-	return c.outbound
 }

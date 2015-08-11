@@ -36,7 +36,7 @@ func (r *Registry) RegisterDevice(hostname string, address net.IP) (*Device, err
 		hostname:         hostname,
 		address:          address,
 		classes:          map[string]message.Class{},
-		internalMessages: make(chan *message.Message, 100),
+		internalMessages: message.NewMessageChannel(),
 		globalMessages:   r.outboundGlobalMessages,
 	}
 	go d.processMessages()

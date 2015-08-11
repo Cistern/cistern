@@ -9,6 +9,6 @@ type Emitter interface {
 	OutboundMessages() chan *Message
 }
 
-type Collector interface {
-	InboundMessages() chan *Message
+type Processor interface {
+	Process(*Message)
 }

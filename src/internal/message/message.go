@@ -9,5 +9,5 @@ type Message struct {
 }
 
 func NewMessageChannel() chan *Message {
-	return make(chan *Message, 128)
+	return make(chan *Message, 1)
 }

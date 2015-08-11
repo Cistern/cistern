@@ -46,6 +46,8 @@ func (c *Class) generateMessages() {
 				case sflow.HostCPUCounters, sflow.HostMemoryCounters, sflow.HostDiskCounters,
 					sflow.HostNetCounters:
 					c.handleHostCounters(record)
+				case sflow.GenericInterfaceCounters:
+					c.handleSwitchCounters(record)
 				default:
 					// Unknown type. Drop.
 				}
@@ -69,6 +71,21 @@ func (c *Class) handleHostCounters(record sflow.Record) {
 		m.Type = "Disk"
 	case sflow.HostNetCounters:
 		m.Type = "Net"
+	default:
+		return
+	}
+	c.outbound <- m
+}
+
+func (c *Class) handleSwitchCounters(record sflow.Record) {
+	m := &message.Message{
+		Class:     "switch-counters",
+		Timestamp: clock.Time(),
+		Content:   record,
+	}
+	switch record.(type) {
+	case sflow.GenericInterfaceCounters:
+		m.Type = "GenericInterface"
 	default:
 		return
 	}

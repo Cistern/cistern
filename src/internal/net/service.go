@@ -46,7 +46,6 @@ func NewService(conf Config, deviceRegistry *device.Registry) (*Service, error) 
 
 func (s *Service) dispatchSFlowDatagrams() {
 	for dgram := range s.sflowDatagrams {
-		log.Printf("received a datagram from %v", dgram.IpAddress)
 		s.deviceRegistry.Lock()
 		dev := s.deviceRegistry.Lookup(dgram.IpAddress)
 		if dev == nil {

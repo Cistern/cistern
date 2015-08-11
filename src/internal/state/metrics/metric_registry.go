@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"math"
+	"sync"
 )
 
 type MetricDefinition struct {
@@ -11,6 +12,7 @@ type MetricDefinition struct {
 
 type MetricRegistry struct {
 	metrics map[string]MetricState
+	sync.Mutex
 }
 
 func NewMetricRegistry() *MetricRegistry {

@@ -7,9 +7,13 @@ import (
 	"net"
 	"sync"
 
+	"internal/clock"
 	"internal/device/class/info/debug"
 	"internal/device/class/info/host_counters"
+	"internal/device/class/info/metrics"
+	"internal/device/class/info/switch_counters"
 	"internal/message"
+	metricsPackage "internal/state/metrics"
 )
 
 var (
@@ -23,6 +27,7 @@ type Device struct {
 	address  net.IP
 
 	classes          map[string]message.Class
+	metrics          *metricsPackage.MetricRegistry
 	internalMessages chan *message.Message
 	globalMessages   chan<- *message.Message
 }
@@ -49,6 +54,9 @@ func (d *Device) Messages() chan *message.Message {
 // channel.
 func (d *Device) processMessages() {
 	for m := range d.internalMessages {
+		if m.Timestamp == 0 {
+			m.Timestamp = clock.Time()
+		}
 		if m.Global {
 			// m is intended for a global class.
 			select {
@@ -63,6 +71,10 @@ func (d *Device) processMessages() {
 			switch m.Class {
 			case host_counters.ClassName:
 				d.RegisterClass(host_counters.NewClass(d.address, d.internalMessages))
+			case switch_counters.ClassName:
+				d.RegisterClass(switch_counters.NewClass(d.address, d.internalMessages))
+			case metrics.ClassName:
+				d.RegisterClass(metrics.NewClass(d.metrics, d.address, d.internalMessages))
 			case debug.ClassName:
 				d.RegisterClass(debug.NewClass())
 			default:

@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"internal/message"
+	"internal/state/metrics"
 )
 
 var ErrAddressAlreadyRegistered = errors.New("device: address already registered")
@@ -36,6 +37,7 @@ func (r *Registry) RegisterDevice(hostname string, address net.IP) (*Device, err
 		hostname:         hostname,
 		address:          address,
 		classes:          map[string]message.Class{},
+		metrics:          metrics.NewMetricRegistry(),
 		internalMessages: message.NewMessageChannel(),
 		globalMessages:   r.outboundGlobalMessages,
 	}

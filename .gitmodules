@@ -10,3 +10,6 @@
 [submodule "vendor/src/github.com/Preetam/snmp"]
 	path = vendor/src/github.com/Preetam/snmp
 	url = https://github.com/Preetam/snmp.git
+[submodule "vendor/src/github.com/Preetam/proto"]
+	path = vendor/src/github.com/Preetam/proto
+	url = https://github.com/Preetam/proto.git

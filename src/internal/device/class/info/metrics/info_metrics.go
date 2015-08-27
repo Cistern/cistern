@@ -1,7 +1,6 @@
 package metrics
 
 import (
-	"log"
 	"net"
 
 	"internal/message"
@@ -43,7 +42,7 @@ func (c *Class) Process(m *message.Message) {
 	c.registry.Lock()
 	defer c.registry.Unlock()
 	for name, v := range metricsData {
-		updatedState := c.registry.Update(name, v.Type, v.Value)
-		log.Printf("%s,device=%s value=%f %d", name, c.sourceAddress, updatedState, m.Timestamp*1e9)
+		c.registry.Update(name, v.Type, v.Value)
+		//log.Printf("%s,device=%s value=%f %d", name, c.sourceAddress, updatedState, m.Timestamp*1e9)
 	}
 }

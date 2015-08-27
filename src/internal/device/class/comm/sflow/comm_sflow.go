@@ -48,6 +48,8 @@ func (c *Class) generateMessages() {
 					c.handleHostCounters(record)
 				case sflow.GenericInterfaceCounters:
 					c.handleSwitchCounters(record)
+				case sflow.RawPacketFlow:
+					c.handleRawPacketFlow(record)
 				default:
 					// Unknown type. Drop.
 				}
@@ -79,15 +81,22 @@ func (c *Class) handleHostCounters(record sflow.Record) {
 
 func (c *Class) handleSwitchCounters(record sflow.Record) {
 	m := &message.Message{
-		Class:     "switch-counters",
-		Timestamp: clock.Time(),
-		Content:   record,
+		Class:   "switch-counters",
+		Content: record,
 	}
 	switch record.(type) {
 	case sflow.GenericInterfaceCounters:
 		m.Type = "GenericInterface"
 	default:
 		return
+	}
+	c.outbound <- m
+}
+
+func (c *Class) handleRawPacketFlow(record sflow.Record) {
+	m := &message.Message{
+		Class:   "packet-flow",
+		Content: record,
 	}
 	c.outbound <- m
 }

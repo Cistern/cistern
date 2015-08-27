@@ -11,6 +11,7 @@ import (
 	"internal/device/class/info/debug"
 	"internal/device/class/info/host_counters"
 	"internal/device/class/info/metrics"
+	"internal/device/class/info/packet_flow"
 	"internal/device/class/info/switch_counters"
 	"internal/message"
 	metricsPackage "internal/state/metrics"
@@ -73,6 +74,8 @@ func (d *Device) processMessages() {
 				d.RegisterClass(host_counters.NewClass(d.address, d.internalMessages))
 			case switch_counters.ClassName:
 				d.RegisterClass(switch_counters.NewClass(d.address, d.internalMessages))
+			case packet_flow.ClassName:
+				d.RegisterClass(packet_flow.NewClass(d.address, d.internalMessages))
 			case metrics.ClassName:
 				d.RegisterClass(metrics.NewClass(d.metrics, d.address, d.internalMessages))
 			case debug.ClassName:

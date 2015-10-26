@@ -8,51 +8,55 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <link href='//fonts.googleapis.com/css?family=Lato:400,300,600' rel='stylesheet' type='text/css'>
+  <link href='https://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="css/normalize.css">
   <link rel="stylesheet" href="css/skeleton.css">
-
   <link rel="icon" type="image/png" href="images/favicon.png" />
 
   <style type='text/css'>
   body {
-    font-family: 'Lato', sans-serif;
-
+    font-family: 'Open Sans', sans-serif;
+    font-size: 14px;
     background-color: #fbfbfb;
-  }
-
-  p {
-    font-family: Arial, sans-serif;
   }
 
   a {
     color: #4F81A1;
+  }
+
+  p {
+    margin: 0.5em 0 0.5em 0;
+  }
+
+  li {
+    margin: 0.5em 0 0.5em 0;
+  }
+
+  img {
+    max-width: 100%;
   }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <div class="row" style="margin-top: 7em">
+    <div class="row" style="margin-top: 3em">
+      <img width='300px' src='images/wordmark.png'/>
+    </div>
+    <div class="row">
       <div class="one-half column">
-        <h2>Cistern</h2>
-        <p>Cistern is a flow collector.</p>
-
-        <h5 style='margin-bottom: 0;'>Goals:</h5>
-        <ul>
-          <li>Scalable network flow analysis</li>
-          <li>Network threat / anomaly detection (see <a href='http://en.wikipedia.org/wiki/Network_Behavior_Anomaly_Detection'>NBAD</a>)</li>
-          <li>Host autodiscovery</li>
-          <li>Flow ranking</li>
+        <p>The Cistern Project is a collection of network monitoring and analytics software.</p>
+        <p>The primary project, Cistern, is a network flow collector. It is written in Go and distributed under the BSD license. It is available on GitHub at <a href='https://github.com/Preetam/cistern'>github.com/Preetam/cistern</a>.</p>
+        <ul>The Cistern Project also consists of several protocol implementations as part of the flow collector which are available as separate packages distributed under the same license:
+        <li>sFlow v5: <a href='https://github.com/Preetam/sflow'>github.com/Preetam/sflow</a></li>
+        <li>SNMP v3: <a href='https://github.com/Preetam/snmp'>github.com/Preetam/snmp</a></li>
+        <li>Layer 2, 3, and 4: <a href='https://github.com/Preetam/proto'>github.com/Preetam/proto</a></li>
         </ul>
-
-        View on <a href='https://github.com/Preetam/cistern'>GitHub</a>.
       </div>
 
       <div class="one-half column">
-        <img src='images/graph1.png'/>
-        <img src='images/graph2.png'/>
+        <img src='images/plots.png'/>
       </div>
     </div>
   </div>

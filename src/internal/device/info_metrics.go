@@ -1,4 +1,4 @@
-package metrics
+package device
 
 import (
 	"net"
@@ -7,17 +7,17 @@ import (
 	metricsPackage "internal/state/metrics"
 )
 
-const ClassName = "metrics"
+const InfoMetricsClassName = "metrics"
 
-type Class struct {
+type InfoMetricsClass struct {
 	registry      *metricsPackage.MetricRegistry
 	sourceAddress net.IP
 	outbound      chan *message.Message
 }
 
-func NewClass(registry *metricsPackage.MetricRegistry,
-	sourceAddress net.IP, outbound chan *message.Message) *Class {
-	c := &Class{
+func NewInfoMetricsClass(registry *metricsPackage.MetricRegistry,
+	sourceAddress net.IP, outbound chan *message.Message) *InfoMetricsClass {
+	c := &InfoMetricsClass{
 		registry:      registry,
 		sourceAddress: sourceAddress,
 		outbound:      outbound,
@@ -25,19 +25,19 @@ func NewClass(registry *metricsPackage.MetricRegistry,
 	return c
 }
 
-func (c *Class) Name() string {
-	return ClassName
+func (c *InfoMetricsClass) Name() string {
+	return InfoMetricsClassName
 }
 
-func (c *Class) Category() string {
+func (c *InfoMetricsClass) Category() string {
 	return "info"
 }
 
-func (c *Class) OutboundMessages() chan *message.Message {
+func (c *InfoMetricsClass) OutboundMessages() chan *message.Message {
 	return c.outbound
 }
 
-func (c *Class) Process(m *message.Message) {
+func (c *InfoMetricsClass) Process(m *message.Message) {
 	metricsData := m.Content.(metricsPackage.MessageContent)
 	c.registry.Lock()
 	defer c.registry.Unlock()

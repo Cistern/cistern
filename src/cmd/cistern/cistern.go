@@ -20,7 +20,7 @@ var (
 	sflowListenAddr = ":6343"
 	apiListenAddr   = ":8080"
 	configFile      = "/opt/cistern/config.json"
-	seriesDataDir   = "/opt/cistern/series"
+	seriesDataDir   = ""
 	commitSHA       = ""
 )
 
@@ -37,7 +37,7 @@ func main() {
 	flag.StringVar(&configFile, "config",
 		configFile, "configuration file")
 	flag.StringVar(&seriesDataDir, "series-data-dir",
-		seriesDataDir, "directory to store time series data")
+		seriesDataDir, "directory to store time series data (disabled by default)")
 	showVersion := flag.Bool("version", false, "Show version")
 	showLicense := flag.Bool("license", false, "Show software licenses")
 	showConfig := flag.Bool("show-config", false, "Show loaded config file")
@@ -77,14 +77,16 @@ func main() {
 		log.Println("✓ Successfully loaded configuration")
 	}
 
-	log.Printf("  Starting series engine using %s", seriesDataDir)
-	engine, err := series.NewEngine(seriesDataDir)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Println("✓ Successfully started series engine")
+	if seriesDataDir != "" {
+		log.Printf("  Starting series engine using %s", seriesDataDir)
+		engine, err := series.NewEngine(seriesDataDir)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Println("✓ Successfully started series engine")
 
-	var _ = engine
+		var _ = engine
+	}
 
 	globalMessages := message.NewMessageChannel()
 	registry := device.NewRegistry(globalMessages)

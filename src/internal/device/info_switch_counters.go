@@ -1,4 +1,4 @@
-package switch_counters
+package device
 
 import (
 	"fmt"
@@ -10,34 +10,36 @@ import (
 	"internal/state/metrics"
 )
 
-const ClassName = "switch-counters"
+const InfoSwitchCountersClassName = "switch-counters"
 
-type Class struct {
+type InfoSwitchCountersClass struct {
 	sourceAddress net.IP
 	outbound      chan *message.Message
 }
 
-func NewClass(sourceAddress net.IP, outbound chan *message.Message) *Class {
-	c := &Class{
+func NewInfoSwitchCountersClass(
+	sourceAddress net.IP,
+	outbound chan *message.Message) *InfoSwitchCountersClass {
+	c := &InfoSwitchCountersClass{
 		sourceAddress: sourceAddress,
 		outbound:      outbound,
 	}
 	return c
 }
 
-func (c *Class) Name() string {
-	return ClassName
+func (c *InfoSwitchCountersClass) Name() string {
+	return InfoSwitchCountersClassName
 }
 
-func (c *Class) Category() string {
+func (c *InfoSwitchCountersClass) Category() string {
 	return "info"
 }
 
-func (c *Class) OutboundMessages() chan *message.Message {
+func (c *InfoSwitchCountersClass) OutboundMessages() chan *message.Message {
 	return c.outbound
 }
 
-func (c *Class) Process(m *message.Message) {
+func (c *InfoSwitchCountersClass) Process(m *message.Message) {
 	switch m.Type {
 	case "GenericInterface":
 		counters := m.Content.(sflow.GenericInterfaceCounters)
@@ -47,7 +49,7 @@ func (c *Class) Process(m *message.Message) {
 	}
 }
 
-func (c *Class) handleGenericInterfaceCounters(counters sflow.GenericInterfaceCounters) {
+func (c *InfoSwitchCountersClass) handleGenericInterfaceCounters(counters sflow.GenericInterfaceCounters) {
 	prefix := fmt.Sprintf("if%d.", counters.Index)
 	c.outbound <- &message.Message{
 		Class: "metrics",

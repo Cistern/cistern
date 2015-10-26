@@ -9,7 +9,6 @@ import (
 	sflowProto "github.com/Preetam/sflow"
 
 	"internal/device"
-	commSFlow "internal/device/class/comm/sflow"
 	"internal/net/sflow"
 )
 
@@ -61,7 +60,7 @@ func (s *Service) dispatchSFlowDatagrams() {
 		if !dev.HasClass("sflow") {
 			log.Println(dev, "needs class \"sflow\".")
 			c := make(chan *sflowProto.Datagram, 1)
-			dev.RegisterClass(commSFlow.NewClass(dgram.IpAddress, c, dev.Messages()))
+			dev.RegisterClass(device.NewCommSFlowClass(dgram.IpAddress, c, dev.Messages()))
 			s.deviceDatagramInbound[dev] = c
 		}
 		select {

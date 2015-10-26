@@ -1,4 +1,4 @@
-package packet_flow
+package device
 
 import (
 	"log"
@@ -10,34 +10,34 @@ import (
 	"internal/message"
 )
 
-const ClassName = "packet-flow"
+const InfoFlowClassName = "packet-flow"
 
-type Class struct {
+type InfoFlowClass struct {
 	sourceAddress net.IP
 	outbound      chan *message.Message
 }
 
-func NewClass(sourceAddress net.IP, outbound chan *message.Message) *Class {
-	c := &Class{
+func NewInfoFlowClass(sourceAddress net.IP, outbound chan *message.Message) *InfoFlowClass {
+	c := &InfoFlowClass{
 		sourceAddress: sourceAddress,
 		outbound:      outbound,
 	}
 	return c
 }
 
-func (c *Class) Name() string {
-	return ClassName
+func (c *InfoFlowClass) Name() string {
+	return InfoFlowClassName
 }
 
-func (c *Class) Category() string {
+func (c *InfoFlowClass) Category() string {
 	return "info"
 }
 
-func (c *Class) OutboundMessages() chan *message.Message {
+func (c *InfoFlowClass) OutboundMessages() chan *message.Message {
 	return c.outbound
 }
 
-func (c *Class) Process(m *message.Message) {
+func (c *InfoFlowClass) Process(m *message.Message) {
 	record := m.Content.(sflow.RawPacketFlow)
 	ethernetPacket, err := proto.DecodeEthernet(record.Header)
 	if err != nil {

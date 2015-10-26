@@ -1,4 +1,4 @@
-package host_counters
+package device
 
 import (
 	"net"
@@ -8,34 +8,34 @@ import (
 	"internal/state/metrics"
 )
 
-const ClassName = "host-counters"
+const InfoHostCountersClassName = "host-counters"
 
-type Class struct {
+type InfoHostCountersClass struct {
 	sourceAddress net.IP
 	outbound      chan *message.Message
 }
 
-func NewClass(sourceAddress net.IP, outbound chan *message.Message) *Class {
-	c := &Class{
+func NewInfoHostCountersClass(sourceAddress net.IP, outbound chan *message.Message) *InfoHostCountersClass {
+	c := &InfoHostCountersClass{
 		sourceAddress: sourceAddress,
 		outbound:      outbound,
 	}
 	return c
 }
 
-func (c *Class) Name() string {
-	return ClassName
+func (c *InfoHostCountersClass) Name() string {
+	return InfoHostCountersClassName
 }
 
-func (c *Class) Category() string {
+func (c *InfoHostCountersClass) Category() string {
 	return "info"
 }
 
-func (c *Class) OutboundMessages() chan *message.Message {
+func (c *InfoHostCountersClass) OutboundMessages() chan *message.Message {
 	return c.outbound
 }
 
-func (c *Class) Process(m *message.Message) {
+func (c *InfoHostCountersClass) Process(m *message.Message) {
 	switch m.Type {
 	case "CPU":
 		cpuCounters := m.Content.(sflow.HostCPUCounters)
@@ -45,7 +45,7 @@ func (c *Class) Process(m *message.Message) {
 	}
 }
 
-func (c *Class) handleCPUCounters(counters sflow.HostCPUCounters) {
+func (c *InfoHostCountersClass) handleCPUCounters(counters sflow.HostCPUCounters) {
 	c.outbound <- &message.Message{
 		Class: "metrics",
 		Content: metrics.MessageContent{

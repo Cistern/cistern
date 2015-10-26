@@ -1,4 +1,4 @@
-package sflow
+package device
 
 import (
 	"net"
@@ -8,16 +8,19 @@ import (
 	"internal/message"
 )
 
-const ClassName = "sflow"
+const CommSFlowClassName = "sflow"
 
-type Class struct {
+type CommSFlowClass struct {
 	sourceAddress net.IP
 	inbound       chan *sflow.Datagram
 	outbound      chan *message.Message
 }
 
-func NewClass(sourceAddress net.IP, inbound chan *sflow.Datagram, outbound chan *message.Message) *Class {
-	c := &Class{
+func NewCommSFlowClass(
+	sourceAddress net.IP,
+	inbound chan *sflow.Datagram,
+	outbound chan *message.Message) *CommSFlowClass {
+	c := &CommSFlowClass{
 		sourceAddress: sourceAddress,
 		inbound:       inbound,
 		outbound:      outbound,
@@ -26,24 +29,26 @@ func NewClass(sourceAddress net.IP, inbound chan *sflow.Datagram, outbound chan 
 	return c
 }
 
-func (c *Class) Name() string {
-	return ClassName
+func (c *CommSFlowClass) Name() string {
+	return CommSFlowClassName
 }
 
-func (c *Class) Category() string {
+func (c *CommSFlowClass) Category() string {
 	return "comm"
 }
 
-func (c *Class) OutboundMessages() chan *message.Message {
+func (c *CommSFlowClass) OutboundMessages() chan *message.Message {
 	return c.outbound
 }
 
-func (c *Class) generateMessages() {
+func (c *CommSFlowClass) generateMessages() {
 	for dgram := range c.inbound {
 		for _, sample := range dgram.Samples {
 			for _, record := range sample.GetRecords() {
 				switch record.(type) {
-				case sflow.HostCPUCounters, sflow.HostMemoryCounters, sflow.HostDiskCounters,
+				case sflow.HostCPUCounters,
+					sflow.HostMemoryCounters,
+					sflow.HostDiskCounters,
 					sflow.HostNetCounters:
 					c.handleHostCounters(record)
 				case sflow.GenericInterfaceCounters:
@@ -58,7 +63,7 @@ func (c *Class) generateMessages() {
 	}
 }
 
-func (c *Class) handleHostCounters(record sflow.Record) {
+func (c *CommSFlowClass) handleHostCounters(record sflow.Record) {
 	m := &message.Message{
 		Class:     "host-counters",
 		Timestamp: clock.Time(),
@@ -79,7 +84,7 @@ func (c *Class) handleHostCounters(record sflow.Record) {
 	c.outbound <- m
 }
 
-func (c *Class) handleSwitchCounters(record sflow.Record) {
+func (c *CommSFlowClass) handleSwitchCounters(record sflow.Record) {
 	m := &message.Message{
 		Class:   "switch-counters",
 		Content: record,
@@ -93,7 +98,7 @@ func (c *Class) handleSwitchCounters(record sflow.Record) {
 	c.outbound <- m
 }
 
-func (c *Class) handleRawPacketFlow(record sflow.Record) {
+func (c *CommSFlowClass) handleRawPacketFlow(record sflow.Record) {
 	m := &message.Message{
 		Class:   "packet-flow",
 		Content: record,

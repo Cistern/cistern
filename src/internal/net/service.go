@@ -8,8 +8,8 @@ import (
 
 	sflowProto "github.com/Preetam/sflow"
 
-	"internal/device"
 	"internal/net/sflow"
+	"internal/source"
 )
 
 type Config struct {
@@ -22,18 +22,18 @@ var DefaultConfig = Config{
 
 type Service struct {
 	lock                  sync.Mutex
-	deviceRegistry        *device.Registry
+	sourceRegistry        *source.Registry
 	sflowDatagrams        chan *sflowProto.Datagram
-	deviceDatagramInbound map[*device.Device]chan *sflowProto.Datagram
+	sourceDatagramInbound map[*source.Source]chan *sflowProto.Datagram
 }
 
-func NewService(conf Config, deviceRegistry *device.Registry) (*Service, error) {
+func NewService(conf Config, sourceRegistry *source.Registry) (*Service, error) {
 	// TODO: use config
 	s := &Service{
 		lock:                  sync.Mutex{},
-		deviceRegistry:        deviceRegistry,
+		sourceRegistry:        sourceRegistry,
 		sflowDatagrams:        make(chan *sflowProto.Datagram, 1),
-		deviceDatagramInbound: map[*device.Device]chan *sflowProto.Datagram{},
+		sourceDatagramInbound: map[*source.Source]chan *sflowProto.Datagram{},
 	}
 	_, err := sflow.NewDecoder(conf.SFlowAddr, s.sflowDatagrams)
 	if err != nil {
@@ -45,26 +45,26 @@ func NewService(conf Config, deviceRegistry *device.Registry) (*Service, error) 
 
 func (s *Service) dispatchSFlowDatagrams() {
 	for dgram := range s.sflowDatagrams {
-		s.deviceRegistry.Lock()
-		dev := s.deviceRegistry.Lookup(dgram.IpAddress)
+		s.sourceRegistry.Lock()
+		dev := s.sourceRegistry.Lookup(dgram.IpAddress)
 		if dev == nil {
 			var err error
-			log.Println(dgram.IpAddress, "is unknown. Registering new device.")
-			dev, err = s.deviceRegistry.RegisterDevice("", dgram.IpAddress)
+			log.Println(dgram.IpAddress, "is unknown. Registering new source.")
+			dev, err = s.sourceRegistry.RegisterSource("", dgram.IpAddress)
 			if err != nil {
 				log.Fatal(err)
 			}
 		}
-		s.deviceRegistry.Unlock()
+		s.sourceRegistry.Unlock()
 		dev.Lock()
 		if !dev.HasClass("sflow") {
 			log.Println(dev, "needs class \"sflow\".")
 			c := make(chan *sflowProto.Datagram, 1)
-			dev.RegisterClass(device.NewCommSFlowClass(dgram.IpAddress, c, dev.Messages()))
-			s.deviceDatagramInbound[dev] = c
+			dev.RegisterClass(source.NewCommSFlowClass(dgram.IpAddress, c, dev.Messages()))
+			s.sourceDatagramInbound[dev] = c
 		}
 		select {
-		case s.deviceDatagramInbound[dev] <- dgram:
+		case s.sourceDatagramInbound[dev] <- dgram:
 		default:
 			// Drop.
 		}

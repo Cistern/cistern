@@ -13,3 +13,6 @@
 [submodule "vendor/src/github.com/Preetam/proto"]
 	path = vendor/src/github.com/Preetam/proto
 	url = https://github.com/Preetam/proto.git
+[submodule "vendor/src/github.com/Preetam/appflow"]
+	path = vendor/src/github.com/Preetam/appflow
+	url = https://github.com/Preetam/appflow.git

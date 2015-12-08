@@ -1,7 +1,7 @@
 package message
 
 type Message struct {
-	Global    bool        // A message in the global scope. False corresponds to a device scope.
+	Global    bool        // A message in the global scope. False corresponds to a source scope.
 	Class     string      // Class name
 	Type      string      // Type within class
 	Timestamp int64       // When the message was sent (as a Unix timestamp)

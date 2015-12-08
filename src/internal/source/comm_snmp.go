@@ -1,4 +1,4 @@
-package device
+package source
 
 import (
 	"github.com/Preetam/snmp"

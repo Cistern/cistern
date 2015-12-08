@@ -1,4 +1,4 @@
-package device
+package source
 
 import (
 	"errors"
@@ -13,10 +13,10 @@ import (
 )
 
 var (
-	ErrClassNameRegistered = errors.New("device: class name already registered")
+	ErrClassNameRegistered = errors.New("source: class name already registered")
 )
 
-type Device struct {
+type Source struct {
 	sync.Mutex
 
 	hostname string
@@ -28,7 +28,7 @@ type Device struct {
 	globalMessages   chan<- *message.Message
 }
 
-func (d *Device) RegisterClass(c message.Class) error {
+func (d *Source) RegisterClass(c message.Class) error {
 	if _, present := d.classes[c.Name()]; present {
 		return ErrClassNameRegistered
 	}
@@ -36,19 +36,19 @@ func (d *Device) RegisterClass(c message.Class) error {
 	return nil
 }
 
-func (d *Device) HasClass(classname string) bool {
+func (d *Source) HasClass(classname string) bool {
 	_, present := d.classes[classname]
 	return present
 }
 
-func (d *Device) Messages() chan *message.Message {
+func (d *Source) Messages() chan *message.Message {
 	return d.internalMessages
 }
 
-// processMessages delivers messages from internal device classes to
-// other internal device classes, or escalates them to the global
+// processMessages delivers messages from internal source classes to
+// other internal source classes, or escalates them to the global
 // channel.
-func (d *Device) processMessages() {
+func (d *Source) processMessages() {
 	for m := range d.internalMessages {
 		if m.Timestamp == 0 {
 			m.Timestamp = clock.Time()
@@ -86,9 +86,9 @@ func (d *Device) processMessages() {
 	}
 }
 
-func (d *Device) String() string {
+func (d *Source) String() string {
 	if d.hostname == "" {
-		return fmt.Sprintf("Device{%v}", d.address)
+		return fmt.Sprintf("Source{%v}", d.address)
 	}
-	return fmt.Sprintf("Device{%s - %v}", d.hostname, d.address)
+	return fmt.Sprintf("Source{%s - %v}", d.hostname, d.address)
 }

@@ -6,15 +6,15 @@ import (
 )
 
 type Configuration struct {
-	Devices []ConfigDevice `json:"devices"`
+	Sources []ConfigSource `json:"sources"`
 }
 
-type ConfigDevice struct {
+type ConfigSource struct {
 	IP   string            `json:"ip"`
-	SNMP *ConfigDeviceSNMP `json:"snmp"`
+	SNMP *ConfigSourceSNMP `json:"snmp"`
 }
 
-type ConfigDeviceSNMP struct {
+type ConfigSourceSNMP struct {
 	Port           int    `json:"port"`
 	User           string `json:"user"`
 	AuthPassphrase string `json:"auth"`

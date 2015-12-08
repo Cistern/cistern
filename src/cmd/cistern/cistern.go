@@ -10,9 +10,9 @@ import (
 
 	"internal/clock"
 	"internal/config"
-	"internal/device"
 	"internal/message"
 	"internal/net"
+	"internal/source"
 	"internal/state/series"
 )
 
@@ -89,7 +89,7 @@ func main() {
 	}
 
 	globalMessages := message.NewMessageChannel()
-	registry := device.NewRegistry(globalMessages)
+	registry := source.NewRegistry(globalMessages)
 	_, err = net.NewService(net.DefaultConfig, registry)
 	if err != nil {
 		log.Fatalf("✗ failed to start network service: %v", err)

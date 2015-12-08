@@ -1,4 +1,4 @@
-package device
+package source
 
 import (
 	"net"
@@ -43,6 +43,6 @@ func (c *InfoMetricsClass) Process(m *message.Message) {
 	defer c.registry.Unlock()
 	for name, v := range metricsData {
 		c.registry.Update(name, v.Type, v.Value)
-		//log.Printf("%s,device=%s value=%f %d", name, c.sourceAddress, updatedState, m.Timestamp*1e9)
+		//log.Printf("%s,source=%s value=%f %d", name, c.sourceAddress, updatedState, m.Timestamp*1e9)
 	}
 }

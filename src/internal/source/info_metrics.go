@@ -1,8 +1,6 @@
 package source
 
 import (
-	"net"
-
 	"internal/message"
 	metricsPackage "internal/state/metrics"
 )
@@ -11,12 +9,12 @@ const InfoMetricsClassName = "metrics"
 
 type InfoMetricsClass struct {
 	registry      *metricsPackage.MetricRegistry
-	sourceAddress net.IP
+	sourceAddress string
 	outbound      chan *message.Message
 }
 
 func NewInfoMetricsClass(registry *metricsPackage.MetricRegistry,
-	sourceAddress net.IP, outbound chan *message.Message) *InfoMetricsClass {
+	sourceAddress string, outbound chan *message.Message) *InfoMetricsClass {
 	c := &InfoMetricsClass{
 		registry:      registry,
 		sourceAddress: sourceAddress,

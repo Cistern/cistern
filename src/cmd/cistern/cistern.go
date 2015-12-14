@@ -17,11 +17,9 @@ import (
 )
 
 var (
-	sflowListenAddr = ":6343"
-	apiListenAddr   = ":8080"
-	configFile      = "/opt/cistern/config.json"
-	seriesDataDir   = ""
-	commitSHA       = ""
+	configFile    = "/opt/cistern/config.json"
+	seriesDataDir = ""
+	commitSHA     = ""
 )
 
 func init() {
@@ -30,10 +28,6 @@ func init() {
 
 func main() {
 	// Flags
-	flag.StringVar(&sflowListenAddr, "sflow-listen-addr",
-		sflowListenAddr, "listen address for sFlow datagrams")
-	flag.StringVar(&apiListenAddr, "api-listen-addr",
-		apiListenAddr, "listen address for HTTP API server")
 	flag.StringVar(&configFile, "config",
 		configFile, "configuration file")
 	flag.StringVar(&seriesDataDir, "series-data-dir",

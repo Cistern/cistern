@@ -2,7 +2,6 @@ package source
 
 import (
 	"errors"
-	"net"
 	"sync"
 
 	"internal/message"
@@ -11,26 +10,23 @@ import (
 
 var ErrAddressAlreadyRegistered = errors.New("source: address already registered")
 
-type mapIP [16]byte
-
 type Registry struct {
 	sync.Mutex
-	sources                map[mapIP]*Source
+	sources                map[string]*Source
 	outboundGlobalMessages chan *message.Message
 }
 
 func NewRegistry(outbound chan *message.Message) *Registry {
 	r := &Registry{
 		Mutex:                  sync.Mutex{},
-		sources:                map[mapIP]*Source{},
+		sources:                map[string]*Source{},
 		outboundGlobalMessages: outbound,
 	}
 	return r
 }
 
-func (r *Registry) RegisterSource(hostname string, address net.IP) (*Source, error) {
-	key := toMapIP(address)
-	if _, present := r.sources[key]; present {
+func (r *Registry) RegisterSource(hostname, address string) (*Source, error) {
+	if _, present := r.sources[address]; present {
 		return nil, ErrAddressAlreadyRegistered
 	}
 	d := &Source{
@@ -42,16 +38,10 @@ func (r *Registry) RegisterSource(hostname string, address net.IP) (*Source, err
 		globalMessages:   r.outboundGlobalMessages,
 	}
 	go d.processMessages()
-	r.sources[key] = d
+	r.sources[address] = d
 	return d, nil
 }
 
-func (r *Registry) Lookup(address net.IP) *Source {
-	return r.sources[toMapIP(address)]
-}
-
-func toMapIP(ip net.IP) mapIP {
-	mIP := mapIP{}
-	copy(mIP[:], ip.To16())
-	return mIP
+func (r *Registry) Lookup(address string) *Source {
+	return r.sources[address]
 }

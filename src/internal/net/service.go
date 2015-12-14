@@ -6,68 +6,112 @@ import (
 	"log"
 	"sync"
 
+	appflowProto "github.com/Preetam/appflow"
 	sflowProto "github.com/Preetam/sflow"
 
+	"internal/net/appflow"
 	"internal/net/sflow"
 	"internal/source"
 )
 
 type Config struct {
-	SFlowAddr string `json:"sflowAddr"`
+	SFlowAddr   string `json:"sflowAddr"`
+	AppFlowAddr string `json:"appflowAddr"`
 }
 
 var DefaultConfig = Config{
-	SFlowAddr: ":6343",
+	SFlowAddr:   ":6343",
+	AppFlowAddr: ":6344",
 }
 
 type Service struct {
-	lock                  sync.Mutex
-	sourceRegistry        *source.Registry
-	sflowDatagrams        chan *sflowProto.Datagram
-	sourceDatagramInbound map[*source.Source]chan *sflowProto.Datagram
+	lock                         sync.Mutex
+	sourceRegistry               *source.Registry
+	sflowDatagrams               chan *sflowProto.Datagram
+	sourceSFlowDatagramInbound   map[*source.Source]chan *sflowProto.Datagram
+	appflowDatagrams             chan *appflowProto.HTTPFlowData
+	sourceAppFlowDatagramInbound map[*source.Source]chan *appflowProto.HTTPFlowData
 }
 
 func NewService(conf Config, sourceRegistry *source.Registry) (*Service, error) {
 	// TODO: use config
 	s := &Service{
-		lock:                  sync.Mutex{},
-		sourceRegistry:        sourceRegistry,
-		sflowDatagrams:        make(chan *sflowProto.Datagram, 1),
-		sourceDatagramInbound: map[*source.Source]chan *sflowProto.Datagram{},
+		lock:                         sync.Mutex{},
+		sourceRegistry:               sourceRegistry,
+		sflowDatagrams:               make(chan *sflowProto.Datagram, 1),
+		sourceSFlowDatagramInbound:   map[*source.Source]chan *sflowProto.Datagram{},
+		appflowDatagrams:             make(chan *appflowProto.HTTPFlowData, 1),
+		sourceAppFlowDatagramInbound: map[*source.Source]chan *appflowProto.HTTPFlowData{},
 	}
 	_, err := sflow.NewDecoder(conf.SFlowAddr, s.sflowDatagrams)
 	if err != nil {
 		return nil, err
 	}
+	log.Println("listening for sFlow datagrams on", conf.SFlowAddr)
+	_, err = appflow.NewDecoder(conf.AppFlowAddr, s.appflowDatagrams)
+	if err != nil {
+		return nil, err
+	}
+	log.Println("listening for AppFlow datagrams on", conf.AppFlowAddr)
 	go s.dispatchSFlowDatagrams()
+	go s.dispatchAppFlowDatagrams()
 	return s, nil
 }
 
 func (s *Service) dispatchSFlowDatagrams() {
 	for dgram := range s.sflowDatagrams {
 		s.sourceRegistry.Lock()
-		dev := s.sourceRegistry.Lookup(dgram.IpAddress)
-		if dev == nil {
+		src := s.sourceRegistry.Lookup(dgram.IpAddress.String())
+		if src == nil {
 			var err error
 			log.Println(dgram.IpAddress, "is unknown. Registering new source.")
-			dev, err = s.sourceRegistry.RegisterSource("", dgram.IpAddress)
+			src, err = s.sourceRegistry.RegisterSource("", dgram.IpAddress.String())
 			if err != nil {
 				log.Fatal(err)
 			}
 		}
 		s.sourceRegistry.Unlock()
-		dev.Lock()
-		if !dev.HasClass("sflow") {
-			log.Println(dev, "needs class \"sflow\".")
+		src.Lock()
+		if !src.HasClass("sflow") {
+			log.Println(src, "needs class \"sflow\".")
 			c := make(chan *sflowProto.Datagram, 1)
-			dev.RegisterClass(source.NewCommSFlowClass(dgram.IpAddress, c, dev.Messages()))
-			s.sourceDatagramInbound[dev] = c
+			src.RegisterClass(source.NewCommSFlowClass(dgram.IpAddress, c, src.Messages()))
+			s.sourceSFlowDatagramInbound[src] = c
 		}
 		select {
-		case s.sourceDatagramInbound[dev] <- dgram:
+		case s.sourceSFlowDatagramInbound[src] <- dgram:
 		default:
 			// Drop.
 		}
-		dev.Unlock()
+		src.Unlock()
+	}
+}
+
+func (s *Service) dispatchAppFlowDatagrams() {
+	for dgram := range s.appflowDatagrams {
+		s.sourceRegistry.Lock()
+		src := s.sourceRegistry.Lookup(dgram.Host)
+		if src == nil {
+			var err error
+			log.Println(dgram.Host, "is unknown. Registering new source.")
+			src, err = s.sourceRegistry.RegisterSource("", dgram.Host)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+		s.sourceRegistry.Unlock()
+		src.Lock()
+		if !src.HasClass("appflow") {
+			log.Println(src, "needs class \"appflow\".")
+			c := make(chan *appflowProto.HTTPFlowData, 1)
+			src.RegisterClass(source.NewCommAppFlowClass(c, src.Messages()))
+			s.sourceAppFlowDatagramInbound[src] = c
+		}
+		select {
+		case s.sourceAppFlowDatagramInbound[src] <- dgram:
+		default:
+			// Drop.
+		}
+		src.Unlock()
 	}
 }

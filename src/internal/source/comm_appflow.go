@@ -2,10 +2,12 @@ package source
 
 import (
 	"github.com/Preetam/appflow"
+
+	"internal/clock"
 	"internal/message"
 )
 
-const CommAppflowClassName = "sflow"
+const CommAppflowClassName = "appflow"
 
 type CommAppflowClass struct {
 	inbound  chan *appflow.HTTPFlowData
@@ -36,7 +38,12 @@ func (c *CommAppflowClass) OutboundMessages() chan *message.Message {
 }
 
 func (c *CommAppflowClass) generateMessages() {
-	for _ = range c.inbound {
-		// TODO: use HTTP flow data
+	for flowData := range c.inbound {
+		m := &message.Message{
+			Class:     "appflow",
+			Timestamp: clock.Time(),
+			Content:   flowData,
+		}
+		c.outbound <- m
 	}
 }

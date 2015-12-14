@@ -1,8 +1,6 @@
 package source
 
 import (
-	"net"
-
 	"github.com/Preetam/sflow"
 	"internal/message"
 	"internal/state/metrics"
@@ -11,11 +9,11 @@ import (
 const InfoHostCountersClassName = "host-counters"
 
 type InfoHostCountersClass struct {
-	sourceAddress net.IP
+	sourceAddress string
 	outbound      chan *message.Message
 }
 
-func NewInfoHostCountersClass(sourceAddress net.IP, outbound chan *message.Message) *InfoHostCountersClass {
+func NewInfoHostCountersClass(sourceAddress string, outbound chan *message.Message) *InfoHostCountersClass {
 	c := &InfoHostCountersClass{
 		sourceAddress: sourceAddress,
 		outbound:      outbound,

@@ -61,34 +61,57 @@ func NewService(conf Config, sourceRegistry *source.Registry) (*Service, error) 
 func (s *Service) dispatchSFlowDatagrams() {
 	for dgram := range s.sflowDatagrams {
 		s.sourceRegistry.Lock()
-		dev := s.sourceRegistry.Lookup(dgram.IpAddress)
-		if dev == nil {
+		src := s.sourceRegistry.Lookup(dgram.IpAddress.String())
+		if src == nil {
 			var err error
 			log.Println(dgram.IpAddress, "is unknown. Registering new source.")
-			dev, err = s.sourceRegistry.RegisterSource("", dgram.IpAddress)
+			src, err = s.sourceRegistry.RegisterSource("", dgram.IpAddress.String())
 			if err != nil {
 				log.Fatal(err)
 			}
 		}
 		s.sourceRegistry.Unlock()
-		dev.Lock()
-		if !dev.HasClass("sflow") {
-			log.Println(dev, "needs class \"sflow\".")
+		src.Lock()
+		if !src.HasClass("sflow") {
+			log.Println(src, "needs class \"sflow\".")
 			c := make(chan *sflowProto.Datagram, 1)
-			dev.RegisterClass(source.NewCommSFlowClass(dgram.IpAddress, c, dev.Messages()))
-			s.sourceSFlowDatagramInbound[dev] = c
+			src.RegisterClass(source.NewCommSFlowClass(dgram.IpAddress, c, src.Messages()))
+			s.sourceSFlowDatagramInbound[src] = c
 		}
 		select {
-		case s.sourceSFlowDatagramInbound[dev] <- dgram:
+		case s.sourceSFlowDatagramInbound[src] <- dgram:
 		default:
 			// Drop.
 		}
-		dev.Unlock()
+		src.Unlock()
 	}
 }
 
 func (s *Service) dispatchAppFlowDatagrams() {
-	for _ = range s.appflowDatagrams {
-		// TODO
+	for dgram := range s.appflowDatagrams {
+		s.sourceRegistry.Lock()
+		src := s.sourceRegistry.Lookup(dgram.Host)
+		if src == nil {
+			var err error
+			log.Println(dgram.Host, "is unknown. Registering new source.")
+			src, err = s.sourceRegistry.RegisterSource("", dgram.Host)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+		s.sourceRegistry.Unlock()
+		src.Lock()
+		if !src.HasClass("appflow") {
+			log.Println(src, "needs class \"appflow\".")
+			c := make(chan *appflowProto.HTTPFlowData, 1)
+			src.RegisterClass(source.NewCommAppFlowClass(c, src.Messages()))
+			s.sourceAppFlowDatagramInbound[src] = c
+		}
+		select {
+		case s.sourceAppFlowDatagramInbound[src] <- dgram:
+		default:
+			// Drop.
+		}
+		src.Unlock()
 	}
 }

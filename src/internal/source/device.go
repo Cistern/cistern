@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net"
 	"sync"
 
 	"internal/clock"
@@ -20,7 +19,7 @@ type Source struct {
 	sync.Mutex
 
 	hostname string
-	address  net.IP
+	address  string
 
 	classes          map[string]message.Class
 	metrics          *metricsPackage.MetricRegistry
@@ -32,6 +31,7 @@ func (d *Source) RegisterClass(c message.Class) error {
 	if _, present := d.classes[c.Name()]; present {
 		return ErrClassNameRegistered
 	}
+	log.Println("registering class", c.Name(), "for", d)
 	d.classes[c.Name()] = c
 	return nil
 }
@@ -71,6 +71,8 @@ func (d *Source) processMessages() {
 				d.RegisterClass(NewInfoSwitchCountersClass(d.address, d.internalMessages))
 			case InfoFlowClassName:
 				d.RegisterClass(NewInfoFlowClass(d.address, d.internalMessages))
+			case InfoHTTPFlowClassName:
+				d.RegisterClass(NewInfoHTTPFlowClass(d.address, d.internalMessages))
 			case InfoMetricsClassName:
 				d.RegisterClass(NewInfoMetricsClass(d.metrics, d.address, d.internalMessages))
 			case InfoDebugClassName:

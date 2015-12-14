@@ -2,7 +2,6 @@ package source
 
 import (
 	"fmt"
-	"net"
 
 	"github.com/Preetam/sflow"
 
@@ -13,12 +12,12 @@ import (
 const InfoSwitchCountersClassName = "switch-counters"
 
 type InfoSwitchCountersClass struct {
-	sourceAddress net.IP
+	sourceAddress string
 	outbound      chan *message.Message
 }
 
 func NewInfoSwitchCountersClass(
-	sourceAddress net.IP,
+	sourceAddress string,
 	outbound chan *message.Message) *InfoSwitchCountersClass {
 	c := &InfoSwitchCountersClass{
 		sourceAddress: sourceAddress,

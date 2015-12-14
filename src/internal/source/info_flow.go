@@ -13,11 +13,11 @@ import (
 const InfoFlowClassName = "packet-flow"
 
 type InfoFlowClass struct {
-	sourceAddress net.IP
+	sourceAddress string
 	outbound      chan *message.Message
 }
 
-func NewInfoFlowClass(sourceAddress net.IP, outbound chan *message.Message) *InfoFlowClass {
+func NewInfoFlowClass(sourceAddress string, outbound chan *message.Message) *InfoFlowClass {
 	c := &InfoFlowClass{
 		sourceAddress: sourceAddress,
 		outbound:      outbound,

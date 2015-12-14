@@ -7,17 +7,17 @@ import (
 	"internal/message"
 )
 
-const CommAppflowClassName = "appflow"
+const CommAppFlowClassName = "appflow"
 
-type CommAppflowClass struct {
+type CommAppFlowClass struct {
 	inbound  chan *appflow.HTTPFlowData
 	outbound chan *message.Message
 }
 
-func NewAppflowClass(
+func NewCommAppFlowClass(
 	inbound chan *appflow.HTTPFlowData,
-	outbound chan *message.Message) *CommAppflowClass {
-	c := &CommAppflowClass{
+	outbound chan *message.Message) *CommAppFlowClass {
+	c := &CommAppFlowClass{
 		inbound:  inbound,
 		outbound: outbound,
 	}
@@ -25,22 +25,22 @@ func NewAppflowClass(
 	return c
 }
 
-func (c *CommAppflowClass) Name() string {
-	return CommSFlowClassName
+func (c *CommAppFlowClass) Name() string {
+	return CommAppFlowClassName
 }
 
-func (c *CommAppflowClass) Category() string {
+func (c *CommAppFlowClass) Category() string {
 	return "comm"
 }
 
-func (c *CommAppflowClass) OutboundMessages() chan *message.Message {
+func (c *CommAppFlowClass) OutboundMessages() chan *message.Message {
 	return c.outbound
 }
 
-func (c *CommAppflowClass) generateMessages() {
+func (c *CommAppFlowClass) generateMessages() {
 	for flowData := range c.inbound {
 		m := &message.Message{
-			Class:     "appflow",
+			Class:     "http-flow",
 			Timestamp: clock.Time(),
 			Content:   flowData,
 		}

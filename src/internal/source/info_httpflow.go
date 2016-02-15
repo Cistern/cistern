@@ -3,7 +3,7 @@ package source
 import (
 	"log"
 
-	"github.com/Preetam/appflow"
+	"github.com/Cistern/appflow"
 
 	"internal/message"
 )

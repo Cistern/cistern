@@ -1,8 +1,8 @@
 package appflow
 
 import (
-	"github.com/Preetam/appflow"
-	"github.com/Preetam/udpchan"
+	"github.com/Cistern/appflow"
+	"github.com/Cistern/udpchan"
 )
 
 // Decoder decodes AppFlow datagrams received over UDP.

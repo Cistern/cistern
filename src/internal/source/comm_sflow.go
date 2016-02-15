@@ -3,7 +3,7 @@ package source
 import (
 	"net"
 
-	"github.com/Preetam/sflow"
+	"github.com/Cistern/sflow"
 	"internal/clock"
 	"internal/message"
 )

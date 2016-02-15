@@ -6,8 +6,8 @@ import (
 	"log"
 	"sync"
 
-	appflowProto "github.com/Preetam/appflow"
-	sflowProto "github.com/Preetam/sflow"
+	appflowProto "github.com/Cistern/appflow"
+	sflowProto "github.com/Cistern/sflow"
 
 	"internal/net/appflow"
 	"internal/net/sflow"

@@ -1,18 +1,18 @@
-[submodule "vendor/src/github.com/Preetam/sflow"]
-	path = vendor/src/github.com/Preetam/sflow
-	url = https://github.com/Preetam/sflow.git
-[submodule "vendor/src/github.com/Preetam/udpchan"]
-	path = vendor/src/github.com/Preetam/udpchan
-	url = https://github.com/Preetam/udpchan.git
-[submodule "vendor/src/github.com/Preetam/catena"]
-	path = vendor/src/github.com/Preetam/catena
-	url = https://github.com/Preetam/catena.git
-[submodule "vendor/src/github.com/Preetam/snmp"]
-	path = vendor/src/github.com/Preetam/snmp
-	url = https://github.com/Preetam/snmp.git
-[submodule "vendor/src/github.com/Preetam/proto"]
-	path = vendor/src/github.com/Preetam/proto
-	url = https://github.com/Preetam/proto.git
-[submodule "vendor/src/github.com/Preetam/appflow"]
-	path = vendor/src/github.com/Preetam/appflow
-	url = https://github.com/Preetam/appflow.git
+[submodule "vendor/src/github.com/Cistern/sflow"]
+	path = vendor/src/github.com/Cistern/sflow
+	url = https://github.com/Cistern/sflow.git
+[submodule "vendor/src/github.com/Cistern/udpchan"]
+	path = vendor/src/github.com/Cistern/udpchan
+	url = https://github.com/Cistern/udpchan.git
+[submodule "vendor/src/github.com/Cistern/catena"]
+	path = vendor/src/github.com/Cistern/catena
+	url = https://github.com/Cistern/catena.git
+[submodule "vendor/src/github.com/Cistern/snmp"]
+	path = vendor/src/github.com/Cistern/snmp
+	url = https://github.com/Cistern/snmp.git
+[submodule "vendor/src/github.com/Cistern/proto"]
+	path = vendor/src/github.com/Cistern/proto
+	url = https://github.com/Cistern/proto.git
+[submodule "vendor/src/github.com/Cistern/appflow"]
+	path = vendor/src/github.com/Cistern/appflow
+	url = https://github.com/Cistern/appflow.git

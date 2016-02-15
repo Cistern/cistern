@@ -4,8 +4,8 @@ import (
 	"log"
 	"net"
 
-	"github.com/Preetam/proto"
-	"github.com/Preetam/sflow"
+	"github.com/Cistern/proto"
+	"github.com/Cistern/sflow"
 
 	"internal/message"
 )

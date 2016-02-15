@@ -1,7 +1,7 @@
 package source
 
 import (
-	"github.com/Preetam/appflow"
+	"github.com/Cistern/appflow"
 
 	"internal/clock"
 	"internal/message"

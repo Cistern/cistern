@@ -3,7 +3,7 @@ package source
 import (
 	"fmt"
 
-	"github.com/Preetam/sflow"
+	"github.com/Cistern/sflow"
 
 	"internal/message"
 	"internal/state/metrics"

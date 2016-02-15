@@ -1,7 +1,7 @@
 package source
 
 import (
-	"github.com/Preetam/snmp"
+	"github.com/Cistern/snmp"
 	"internal/message"
 )
 

@@ -1,5 +1,5 @@
 package series
 
-import "github.com/Preetam/catena"
+import "github.com/Cistern/catena"
 
 type Observation catena.Row

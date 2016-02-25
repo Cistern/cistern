@@ -15,4 +15,4 @@
 	url = https://github.com/Cistern/proto.git
 [submodule "vendor/github.com/Cistern/appflow"]
 	path = vendor/github.com/Cistern/appflow
-	url = https://github.com/Cistern/appflow.git
+	url = https://github.com/Cistern/appflow

@@ -8,6 +8,8 @@ import (
 	"log"
 	"os"
 
+	_ "github.com/aws/aws-sdk-go"
+
 	"github.com/Cistern/cistern/clock"
 	"github.com/Cistern/cistern/config"
 	"github.com/Cistern/cistern/message"

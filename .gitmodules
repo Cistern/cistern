@@ -16,3 +16,6 @@
 [submodule "vendor/github.com/Cistern/appflow"]
 	path = vendor/github.com/Cistern/appflow
 	url = https://github.com/Cistern/appflow
+[submodule "vendor/github.com/aws/aws-sdk-go"]
+	path = vendor/github.com/aws/aws-sdk-go
+	url = https://github.com/Cistern/aws-sdk-go.git

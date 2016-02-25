@@ -1,8 +1,8 @@
 package source
 
 import (
-	"internal/message"
-	metricsPackage "internal/state/metrics"
+	"github.com/Cistern/cistern/message"
+	metricsPackage "github.com/Cistern/cistern/state/metrics"
 )
 
 const InfoMetricsClassName = "metrics"

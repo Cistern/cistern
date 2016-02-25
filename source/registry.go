@@ -4,8 +4,8 @@ import (
 	"errors"
 	"sync"
 
-	"internal/message"
-	"internal/state/metrics"
+	"github.com/Cistern/cistern/message"
+	"github.com/Cistern/cistern/state/metrics"
 )
 
 var ErrAddressAlreadyRegistered = errors.New("source: address already registered")

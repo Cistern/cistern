@@ -3,8 +3,8 @@ package source
 import (
 	"github.com/Cistern/appflow"
 
-	"internal/clock"
-	"internal/message"
+	"github.com/Cistern/cistern/clock"
+	"github.com/Cistern/cistern/message"
 )
 
 const CommAppFlowClassName = "appflow"

@@ -1,8 +1,8 @@
 package source
 
 import (
+	"github.com/Cistern/cistern/message"
 	"github.com/Cistern/snmp"
-	"internal/message"
 )
 
 const CommSNMPClassName = "snmp"

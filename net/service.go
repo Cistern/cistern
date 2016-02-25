@@ -9,9 +9,9 @@ import (
 	appflowProto "github.com/Cistern/appflow"
 	sflowProto "github.com/Cistern/sflow"
 
-	"internal/net/appflow"
-	"internal/net/sflow"
-	"internal/source"
+	"github.com/Cistern/cistern/net/appflow"
+	"github.com/Cistern/cistern/net/sflow"
+	"github.com/Cistern/cistern/source"
 )
 
 type Config struct {

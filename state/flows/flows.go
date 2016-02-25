@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"internal/state/metrics"
+	"github.com/Cistern/cistern/state/metrics"
 )
 
 const (

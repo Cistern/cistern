@@ -5,8 +5,8 @@ import (
 
 	"github.com/Cistern/sflow"
 
-	"internal/message"
-	"internal/state/metrics"
+	"github.com/Cistern/cistern/message"
+	"github.com/Cistern/cistern/state/metrics"
 )
 
 const InfoSwitchCountersClassName = "switch-counters"

@@ -3,7 +3,7 @@ package source
 import (
 	"log"
 
-	"internal/message"
+	"github.com/Cistern/cistern/message"
 )
 
 const InfoDebugClassName = "debug"

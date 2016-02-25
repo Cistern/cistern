@@ -5,7 +5,7 @@ import (
 
 	"github.com/Cistern/appflow"
 
-	"internal/message"
+	"github.com/Cistern/cistern/message"
 )
 
 const InfoHTTPFlowClassName = "http-flow"

@@ -1,18 +1,18 @@
-[submodule "vendor/src/github.com/Cistern/sflow"]
-	path = vendor/src/github.com/Cistern/sflow
+[submodule "vendor/github.com/Cistern/sflow"]
+	path = vendor/github.com/Cistern/sflow
 	url = https://github.com/Cistern/sflow.git
-[submodule "vendor/src/github.com/Cistern/udpchan"]
-	path = vendor/src/github.com/Cistern/udpchan
+[submodule "vendor/github.com/Cistern/udpchan"]
+	path = vendor/github.com/Cistern/udpchan
 	url = https://github.com/Cistern/udpchan.git
-[submodule "vendor/src/github.com/Cistern/catena"]
-	path = vendor/src/github.com/Cistern/catena
+[submodule "vendor/github.com/Cistern/catena"]
+	path = vendor/github.com/Cistern/catena
 	url = https://github.com/Cistern/catena.git
-[submodule "vendor/src/github.com/Cistern/snmp"]
-	path = vendor/src/github.com/Cistern/snmp
+[submodule "vendor/github.com/Cistern/snmp"]
+	path = vendor/github.com/Cistern/snmp
 	url = https://github.com/Cistern/snmp.git
-[submodule "vendor/src/github.com/Cistern/proto"]
-	path = vendor/src/github.com/Cistern/proto
+[submodule "vendor/github.com/Cistern/proto"]
+	path = vendor/github.com/Cistern/proto
 	url = https://github.com/Cistern/proto.git
-[submodule "vendor/src/github.com/Cistern/appflow"]
-	path = vendor/src/github.com/Cistern/appflow
+[submodule "vendor/github.com/Cistern/appflow"]
+	path = vendor/github.com/Cistern/appflow
 	url = https://github.com/Cistern/appflow.git

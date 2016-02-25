@@ -7,7 +7,7 @@ import (
 	"github.com/Cistern/proto"
 	"github.com/Cistern/sflow"
 
-	"internal/message"
+	"github.com/Cistern/cistern/message"
 )
 
 const InfoFlowClassName = "packet-flow"

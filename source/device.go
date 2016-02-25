@@ -6,9 +6,9 @@ import (
 	"log"
 	"sync"
 
-	"internal/clock"
-	"internal/message"
-	metricsPackage "internal/state/metrics"
+	"github.com/Cistern/cistern/clock"
+	"github.com/Cistern/cistern/message"
+	metricsPackage "github.com/Cistern/cistern/state/metrics"
 )
 
 var (

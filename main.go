@@ -8,12 +8,12 @@ import (
 	"log"
 	"os"
 
-	"internal/clock"
-	"internal/config"
-	"internal/message"
-	"internal/net"
-	"internal/source"
-	"internal/state/series"
+	"github.com/Cistern/cistern/clock"
+	"github.com/Cistern/cistern/config"
+	"github.com/Cistern/cistern/message"
+	"github.com/Cistern/cistern/net"
+	"github.com/Cistern/cistern/source"
+	"github.com/Cistern/cistern/state/series"
 )
 
 var (

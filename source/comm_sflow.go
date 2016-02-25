@@ -3,9 +3,9 @@ package source
 import (
 	"net"
 
+	"github.com/Cistern/cistern/clock"
+	"github.com/Cistern/cistern/message"
 	"github.com/Cistern/sflow"
-	"internal/clock"
-	"internal/message"
 )
 
 const CommSFlowClassName = "sflow"

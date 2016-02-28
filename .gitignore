@@ -2,3 +2,5 @@
 *.swo
 bin
 pkg
+cistern
+!vendor/*

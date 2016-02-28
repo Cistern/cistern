@@ -14,6 +14,8 @@ import (
 	"github.com/Cistern/cistern/net"
 	"github.com/Cistern/cistern/source"
 	"github.com/Cistern/cistern/state/series"
+
+	_ "github.com/influxdata/influxdb/client"
 )
 
 var (

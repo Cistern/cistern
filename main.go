@@ -92,6 +92,16 @@ func main() {
 	}
 	log.Println("✓ Successfully started network service")
 
+	// Add VPC flow log sources
+	for _, flowLogConfig := range conf.AWSFlowLogConfigs {
+		s, err := registry.RegisterSource(flowLogConfig.LogStreamName, "")
+		if err != nil {
+			log.Printf("Failed to register flow log source: %v; skipping", err)
+			continue
+		}
+		s.RegisterClass(source.NewCommVPCFlowLogsClass(flowLogConfig, s.Messages()))
+	}
+
 	// make sure we don't exit
 	<-make(chan struct{})
 }

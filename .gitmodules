@@ -16,6 +16,10 @@
 [submodule "vendor/github.com/Cistern/appflow"]
 	path = vendor/github.com/Cistern/appflow
 	url = https://github.com/Cistern/appflow
+
+[submodule "vendor/github.com/influxdata/influxdb"]
+	path = vendor/github.com/influxdata/influxdb
+	url = https://github.com/Cistern/influxdb.git
 [submodule "vendor/github.com/aws/aws-sdk-go"]
 	path = vendor/github.com/aws/aws-sdk-go
 	url = https://github.com/Cistern/aws-sdk-go.git

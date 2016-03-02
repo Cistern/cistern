@@ -8,6 +8,8 @@ import (
 	"log"
 	"os"
 
+	_ "github.com/aws/aws-sdk-go"
+
 	"github.com/Cistern/cistern/clock"
 	"github.com/Cistern/cistern/config"
 	"github.com/Cistern/cistern/message"
@@ -89,6 +91,16 @@ func main() {
 		log.Fatalf("✗ failed to start network service: %v", err)
 	}
 	log.Println("✓ Successfully started network service")
+
+	// Add VPC flow log sources
+	for _, flowLogConfig := range conf.AWSFlowLogConfigs {
+		s, err := registry.RegisterSource(flowLogConfig.LogStreamName, "")
+		if err != nil {
+			log.Printf("Failed to register flow log source: %v; skipping", err)
+			continue
+		}
+		s.RegisterClass(source.NewCommVPCFlowLogsClass(flowLogConfig, s.Messages()))
+	}
 
 	// make sure we don't exit
 	<-make(chan struct{})

@@ -6,7 +6,8 @@ import (
 )
 
 type Configuration struct {
-	Sources []ConfigSource `json:"sources"`
+	Sources           []ConfigSource     `json:"sources"`
+	AWSFlowLogConfigs []AWSFlowLogConfig `json:"awsFlowLogConfigs"`
 }
 
 type ConfigSource struct {
@@ -26,6 +27,14 @@ type SNMPEntry struct {
 	User           string `json:"user"`
 	AuthPassphrase string `json:"authPassphrase"`
 	PrivPassphrase string `json:"privPassphrase"`
+}
+
+type AWSFlowLogConfig struct {
+	Region          string `json:"region"`
+	AccessKeyID     string `json:"accessKeyID"`
+	SecretAccessKey string `json:"secretAccessKey"`
+	LogGroupName    string `json:"logGroupName"`
+	LogStreamName   string `json:"logStreamName"`
 }
 
 func Load(path string) (Configuration, error) {

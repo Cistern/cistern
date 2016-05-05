@@ -8,16 +8,12 @@ import (
 	"log"
 	"os"
 
-	_ "github.com/aws/aws-sdk-go"
-
 	"github.com/Cistern/cistern/clock"
 	"github.com/Cistern/cistern/config"
 	"github.com/Cistern/cistern/message"
 	"github.com/Cistern/cistern/net"
 	"github.com/Cistern/cistern/source"
 	"github.com/Cistern/cistern/state/series"
-
-	_ "github.com/influxdata/influxdb/client"
 )
 
 var (
@@ -75,33 +71,32 @@ func main() {
 		log.Println("✓ Successfully loaded configuration")
 	}
 
+	var engine *series.Engine
 	if seriesDataDir != "" {
 		log.Printf("  Starting series engine using %s", seriesDataDir)
-		engine, err := series.NewEngine(seriesDataDir)
+		engine, err = series.NewEngine(seriesDataDir)
 		if err != nil {
 			log.Fatal(err)
 		}
 		log.Println("✓ Successfully started series engine")
-
-		var _ = engine
 	}
 
 	globalMessages := message.NewMessageChannel()
 	registry := source.NewRegistry(globalMessages)
-	_, err = net.NewService(net.DefaultConfig, registry)
+	_, err = net.NewService(net.DefaultConfig, registry, engine)
 	if err != nil {
 		log.Fatalf("✗ failed to start network service: %v", err)
 	}
 	log.Println("✓ Successfully started network service")
 
-	// Add VPC flow log sources
-	for _, flowLogConfig := range conf.AWSFlowLogConfigs {
-		s, err := registry.RegisterSource(flowLogConfig.LogStreamName, "")
-		if err != nil {
-			log.Printf("Failed to register flow log source: %v; skipping", err)
-			continue
+	// Process global messages
+	for m := range globalMessages {
+		switch m.Class {
+		case series.SeriesEngineClassName:
+			engine.Process(m)
+		default:
+			// Drop
 		}
-		s.RegisterClass(source.NewCommVPCFlowLogsClass(flowLogConfig, s.Messages()))
 	}
 
 	// make sure we don't exit

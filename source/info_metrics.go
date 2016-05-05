@@ -3,6 +3,7 @@ package source
 import (
 	"github.com/Cistern/cistern/message"
 	metricsPackage "github.com/Cistern/cistern/state/metrics"
+	"github.com/Cistern/cistern/state/series"
 )
 
 const InfoMetricsClassName = "metrics"
@@ -39,8 +40,21 @@ func (c *InfoMetricsClass) Process(m *message.Message) {
 	metricsData := m.Content.(metricsPackage.MessageContent)
 	c.registry.Lock()
 	defer c.registry.Unlock()
+
+	observations := []series.Observation{}
 	for name, v := range metricsData {
-		c.registry.Update(name, v.Type, v.Value)
-		//log.Printf("%s,source=%s value=%f %d", name, c.sourceAddress, updatedState, m.Timestamp*1e9)
+		updatedVal := c.registry.Update(name, v.Type, v.Value)
+		observations = append(observations, series.Observation{
+			Source:    c.sourceAddress,
+			Metric:    name,
+			Timestamp: m.Timestamp,
+			Value:     float64(updatedVal),
+		})
+	}
+
+	c.outbound <- &message.Message{
+		Class:   series.SeriesEngineClassName,
+		Global:  true,
+		Content: observations,
 	}
 }

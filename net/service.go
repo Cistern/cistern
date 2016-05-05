@@ -9,19 +9,23 @@ import (
 	appflowProto "github.com/Cistern/appflow"
 	sflowProto "github.com/Cistern/sflow"
 
+	apiPackage "github.com/Cistern/cistern/net/api"
 	"github.com/Cistern/cistern/net/appflow"
 	"github.com/Cistern/cistern/net/sflow"
 	"github.com/Cistern/cistern/source"
+	"github.com/Cistern/cistern/state/series"
 )
 
 type Config struct {
 	SFlowAddr   string `json:"sflowAddr"`
 	AppFlowAddr string `json:"appflowAddr"`
+	APIAddr     string `json:"apiAddr"`
 }
 
 var DefaultConfig = Config{
 	SFlowAddr:   ":6343",
 	AppFlowAddr: ":6344",
+	APIAddr:     ":6345",
 }
 
 type Service struct {
@@ -33,7 +37,7 @@ type Service struct {
 	sourceAppFlowDatagramInbound map[*source.Source]chan *appflowProto.HTTPFlowData
 }
 
-func NewService(conf Config, sourceRegistry *source.Registry) (*Service, error) {
+func NewService(conf Config, sourceRegistry *source.Registry, seriesEngine *series.Engine) (*Service, error) {
 	// TODO: use config
 	s := &Service{
 		lock:                         sync.Mutex{},
@@ -53,8 +57,10 @@ func NewService(conf Config, sourceRegistry *source.Registry) (*Service, error) 
 		return nil, err
 	}
 	log.Println("listening for AppFlow datagrams on", conf.AppFlowAddr)
+	api := apiPackage.NewAPI(conf.APIAddr, seriesEngine)
 	go s.dispatchSFlowDatagrams()
 	go s.dispatchAppFlowDatagrams()
+	go api.Run()
 	return s, nil
 }
 

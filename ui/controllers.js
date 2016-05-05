@@ -33,7 +33,7 @@ function DevicesCtrl($scope, $http) {
     "CPU", "Disk", "Memory"
   ];
 
-  $http.get(cisternURL+'/devices/').then(function(response) {
+  $http.get(cisternURL+'/sources/').then(function(response) {
     if (response.status == 200) {
       $scope.devices = response.data.data;
 
@@ -66,7 +66,7 @@ function DevicesCtrl($scope, $http) {
 function FlowsCtrl($scope, $http) {
   $http.get(flowURL).then(function(response) {
     if (response.status == 200) {
-      $scope.flows = response.data.data;     
+      $scope.flows = response.data.data;
     }
   });
 }

@@ -35,14 +35,19 @@ function DevicesCtrl($scope, $http) {
 
   $http.get(cisternURL+'/sources/').then(function(response) {
     if (response.status == 200) {
-      $scope.devices = response.data.data;
+      $scope.devices = [];
+      for (var i = 0; i < response.data.data.length; i++) {
+        $scope.devices.push({
+          name: response.data.data[i]
+        })
+      }
 
       $scope.devices.sort(function(a, b) {
-        if (a < b) {
+        if (a.name < b.name) {
           return -1;
         }
 
-        if (a > b) {
+        if (a.name > b.name) {
           return 1;
         }
 

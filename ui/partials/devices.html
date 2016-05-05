@@ -2,7 +2,7 @@
 
 <div class='devicesContainer'>
   <div class='device-container' ng-repeat='device in devices'>
-    <span class='device-ip'>{{device}}</span>
+    <span class='device-ip'>{{device.name}}</span>
 
     <div>
       <button class='btn btn-xs' ng-repeat='chart in charts' ng-click='loadChart(device, chart)'>{{chart}}</button>

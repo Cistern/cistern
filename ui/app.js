@@ -172,7 +172,7 @@ cisternApp.directive('uiChart', function() {
       };
 
       $.ajax({
-        url: cisternURL+'/series/query?pointWidth=' + 60,
+        url: cisternURL+'/series/query?pointWidth=' + 240,
         data: JSON.stringify(rows),
         success: closure({source: scope.source, desc: scope.desc, metrics: scope.metrics, factors: scope.factors}, el),
         contentType: "application/json",

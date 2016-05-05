@@ -5,7 +5,7 @@ var templateDefinitions = {
   "CPU":
   {
     "desc": "CPU usage",
-    "metrics": ['cpu.idle', 'cpu.user', 'cpu.sys', 'cpu.nice', 'cpu.softintr', 'cpu.intr', 'cpu.wio']
+    "metrics": ['cpu.user', 'cpu.sys', 'cpu.nice', 'cpu.softintr', 'cpu.intr', 'cpu.wio', 'cpu.idle']
   },
 
   "Disk":
@@ -18,7 +18,7 @@ var templateDefinitions = {
   "Memory":
   {
     "desc": "Memory usage",
-    "metrics": ['mem.free', 'mem.shared', 'mem.buffers', 'mem.cached', 'mem.used']
+    "metrics": ['mem.used', 'mem.shared', 'mem.buffers', 'mem.cached', 'mem.free']
   }
 };
 

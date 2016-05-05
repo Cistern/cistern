@@ -62,7 +62,7 @@ func (api *API) Run() {
 	service.Route("GET", "/sources", "Lists sources", func(c siesta.Context, w http.ResponseWriter, r *http.Request) {
 		var params siesta.Params
 		start := params.Int64("start", -3600, "Start timestamp")
-		end := params.Int64("start", 0, "End timestamp")
+		end := params.Int64("end", 0, "End timestamp")
 		err := params.Parse(r.Form)
 		if err != nil {
 			c.Set(errorKey, err.Error())
@@ -86,7 +86,7 @@ func (api *API) Run() {
 			var params siesta.Params
 			source := params.String("source", "", "Source name")
 			start := params.Int64("start", -3600, "Start timestamp")
-			end := params.Int64("start", 0, "End timestamp")
+			end := params.Int64("end", 0, "End timestamp")
 			err := params.Parse(r.Form)
 			if err != nil {
 				c.Set(errorKey, err.Error())

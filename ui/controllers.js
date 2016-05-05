@@ -18,7 +18,7 @@ var templateDefinitions = {
   "Memory":
   {
     "desc": "Memory usage",
-    "metrics": ['mem.free', 'mem.shared', 'mem.buffers', 'mem.cached']
+    "metrics": ['mem.free', 'mem.shared', 'mem.buffers', 'mem.cached', 'mem.used']
   }
 };
 

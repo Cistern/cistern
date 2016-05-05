@@ -101,7 +101,7 @@ cisternApp.directive('uiChart', function() {
           col.unshift(colname);
           columns.push(col);
         }
-        
+
         return {
           columns: columns,
           xs: xs,
@@ -133,7 +133,7 @@ cisternApp.directive('uiChart', function() {
               type: 'timeseries',
               tick: {
                 format:'%I:%M:%S',
-                count: 3 
+                count: 3
               }
             },
             y: {
@@ -172,7 +172,7 @@ cisternApp.directive('uiChart', function() {
       };
 
       $.ajax({
-        url: cisternURL+'/series/query?pointWidth=' + 288,
+        url: cisternURL+'/series/query?pointWidth=' + 60,
         data: JSON.stringify(rows),
         success: closure({source: scope.source, desc: scope.desc, metrics: scope.metrics, factors: scope.factors}, el),
         contentType: "application/json",

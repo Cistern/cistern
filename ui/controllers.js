@@ -38,11 +38,11 @@ function DevicesCtrl($scope, $http) {
       $scope.devices = response.data.data;
 
       $scope.devices.sort(function(a, b) {
-        if (a.ip < b.ip) {
+        if (a < b) {
           return -1;
         }
 
-        if (a.ip > b.ip) {
+        if (a > b) {
           return 1;
         }
 
@@ -52,9 +52,9 @@ function DevicesCtrl($scope, $http) {
   });
 
   $scope.loadChart = function(device, chart) {
-    console.log(device.ip, chart);
+    console.log(device, chart);
     var templDef = templateDefinitions[chart];
-    templDef.source = device.ip;
+    templDef.source = device;
 
     console.log(templDef);
 

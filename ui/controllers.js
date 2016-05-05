@@ -59,7 +59,7 @@ function DevicesCtrl($scope, $http) {
   $scope.loadChart = function(device, chart) {
     console.log(device, chart);
     var templDef = templateDefinitions[chart];
-    templDef.source = device;
+    templDef.source = device.name;
 
     console.log(templDef);
 

@@ -19,6 +19,13 @@ var templateDefinitions = {
   {
     "desc": "Memory usage",
     "metrics": ['mem.used', 'mem.shared', 'mem.buffers', 'mem.cached', 'mem.free']
+  },
+  
+  "Network":
+  {
+    "desc": "Network traffic",
+    "metrics": ['net.bytes_out', 'net.bytes_in'],
+    "factors": [-1, 1]
   }
 };
 

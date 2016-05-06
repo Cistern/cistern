@@ -129,6 +129,9 @@ cisternApp.directive('uiChart', function() {
             groups: c3Data.groups,
             order: null
           },
+          size: {
+            height: 125
+          },
           axis: {
             x: {
               type: 'timeseries',

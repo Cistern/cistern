@@ -126,7 +126,8 @@ cisternApp.directive('uiChart', function() {
             xs: c3Data.xs,
             columns: c3Data.columns,
             types: c3Data.types,
-            groups: c3Data.groups
+            groups: c3Data.groups,
+            order: null
           },
           axis: {
             x: {

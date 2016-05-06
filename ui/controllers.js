@@ -37,7 +37,7 @@ function NavigationCtrl($scope, $location) {
 
 function DevicesCtrl($scope, $http) {
   $scope.charts = [
-    "CPU", "Disk", "Memory"
+    "CPU", "Disk", "Memory", "Network"
   ];
 
   $http.get(cisternURL+'/sources/').then(function(response) {

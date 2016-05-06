@@ -140,7 +140,7 @@ cisternApp.directive('uiChart', function() {
             y: {
               tick: {
                 count: 5,
-                format: function(n) { return n.toExponential(2); }
+                format: d3.format('.1s')
               },
               center: 0
             }

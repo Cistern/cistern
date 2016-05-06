@@ -61,7 +61,7 @@ cisternApp.directive('uiChart', function() {
         var groups = [template.metrics];
 
         for(var i in template.metrics) {
-          types[template.metrics[i]] = 'area';
+          types[template.metrics[i]] = 'area-step';
         }
 
         for(var i in series) {

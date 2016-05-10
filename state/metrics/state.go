@@ -41,10 +41,11 @@ func (d DerivativeState) Update(value interface{}) MetricState {
 	now := time.Now()
 	timeDelta := now.Sub(d.lastUpdated)
 	currentValue := getUint64Value(value)
-	if d.prev >= currentValue {
+	if d.prev > currentValue {
 		// Rollover? Keep the value we have.
 		d.lastUpdated = now
 		d.prev = currentValue
+		d.value = 0
 		return d
 	}
 	d.value = float32(float64(currentValue-d.prev) / timeDelta.Seconds())

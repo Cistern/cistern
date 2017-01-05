@@ -57,18 +57,18 @@ func main() {
 	log.Printf("  Attempting to load configuration file at %s", configFile)
 	conf, err := config.Load(configFile)
 	if err != nil {
-		log.Printf("✗ Could not load configuration: `%v`", err)
-	}
-
-	// Log the loaded config
-	confBytes, err := json.MarshalIndent(conf, "  ", "  ")
-	if err != nil {
-		log.Printf("✗ Could not log config: `%v`", err)
+		log.Printf("✗ Could not load configuration file: `%v`", err)
 	} else {
-		if *showConfig {
-			log.Println("\n  " + string(confBytes))
+		// Log the loaded config
+		confBytes, err := json.MarshalIndent(conf, "  ", "  ")
+		if err != nil {
+			log.Printf("✗ Could not log config: `%v`", err)
+		} else {
+			if *showConfig {
+				log.Println("\n  " + string(confBytes))
+			}
+			log.Println("✓ Successfully loaded configuration")
 		}
-		log.Println("✓ Successfully loaded configuration")
 	}
 
 	var engine *series.Engine
@@ -79,6 +79,8 @@ func main() {
 			log.Fatal(err)
 		}
 		log.Println("✓ Successfully started series engine")
+	} else {
+		log.Println("  Not using series engine because -series-data-dir is not defined")
 	}
 
 	globalMessages := message.NewMessageChannel()
@@ -93,6 +95,9 @@ func main() {
 	for m := range globalMessages {
 		switch m.Class {
 		case series.SeriesEngineClassName:
+			if engine == nil {
+				continue
+			}
 			engine.Process(m)
 		default:
 			// Drop

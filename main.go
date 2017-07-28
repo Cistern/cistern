@@ -1,109 +1,64 @@
-// Cistern is a flow collector.
 package main
 
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
-
-	"github.com/Cistern/cistern/clock"
-	"github.com/Cistern/cistern/config"
-	"github.com/Cistern/cistern/message"
-	"github.com/Cistern/cistern/net"
-	"github.com/Cistern/cistern/source"
-	"github.com/Cistern/cistern/state/series"
+	"os/signal"
+	"sync"
+	"syscall"
+	"time"
 )
 
 var (
-	configFile    = "/opt/cistern/config.json"
-	seriesDataDir = ""
-	commitSHA     = ""
+	DataDir         = "./data/"
+	Collections     = map[string]*EventCollection{}
+	collectionsLock sync.Mutex
 )
 
-func init() {
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
-}
-
 func main() {
-	// Flags
-	flag.StringVar(&configFile, "config",
-		configFile, "configuration file")
-	flag.StringVar(&seriesDataDir, "series-data-dir",
-		seriesDataDir, "directory to store time series data (disabled by default)")
-	showVersion := flag.Bool("version", false, "Show version")
-	showLicense := flag.Bool("license", false, "Show software licenses")
-	showConfig := flag.Bool("show-config", false, "Show loaded config file")
+	configFilePath := flag.String("config", "./cistern.json", "Path to config file")
+	apiAddr := flag.String("api-addr", "localhost:2020", "API listen address")
+	flag.StringVar(&DataDir, "data-dir", DataDir, "Data directory")
 	flag.Parse()
 
-	if *showVersion {
-		shaString := ""
-		if commitSHA != "" {
-			shaString = " (" + commitSHA + ")"
-		}
-		fmt.Printf("Cistern version %s%s", version, shaString)
-		os.Exit(0)
-	}
-
-	if *showLicense {
-		fmt.Println(license)
-		os.Exit(0)
-	}
-
-	log.Printf("Cistern version %s starting", version)
-	clock.Run()
-
-	log.Printf("  Attempting to load configuration file at %s", configFile)
-	conf, err := config.Load(configFile)
+	configFileData, err := ioutil.ReadFile(*configFilePath)
 	if err != nil {
-		log.Printf("✗ Could not load configuration file: `%v`", err)
-	} else {
-		// Log the loaded config
-		confBytes, err := json.MarshalIndent(conf, "  ", "  ")
-		if err != nil {
-			log.Printf("✗ Could not log config: `%v`", err)
-		} else {
-			if *showConfig {
-				log.Println("\n  " + string(confBytes))
-			}
-			log.Println("✓ Successfully loaded configuration")
-		}
+		log.Fatal("failed to read config file:", err)
 	}
 
-	var engine *series.Engine
-	if seriesDataDir != "" {
-		log.Printf("  Starting series engine using %s", seriesDataDir)
-		engine, err = series.NewEngine(seriesDataDir)
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Println("✓ Successfully started series engine")
-	} else {
-		log.Println("  Not using series engine because -series-data-dir is not defined")
-	}
-
-	globalMessages := message.NewMessageChannel()
-	registry := source.NewRegistry(globalMessages)
-	_, err = net.NewService(net.DefaultConfig, registry, engine)
+	config := Config{}
+	err = json.Unmarshal(configFileData, &config)
 	if err != nil {
-		log.Fatalf("✗ failed to start network service: %v", err)
+		log.Fatal("not a valid config file:", err)
 	}
-	log.Println("✓ Successfully started network service")
 
-	// Process global messages
-	for m := range globalMessages {
-		switch m.Class {
-		case series.SeriesEngineClassName:
-			if engine == nil {
-				continue
-			}
-			engine.Process(m)
-		default:
-			// Drop
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	done := make(chan struct{})
+	go func() {
+		sig := <-sigs
+		log.Println("Got signal", sig)
+		close(done)
+	}()
+
+	for _, group := range config.CloudWatchLogs {
+		if group.FlowLog {
+			go func() {
+				err := captureFlowLogs(group.Name, config.Retention, done)
+				if err != nil {
+					log.Fatal(err)
+				}
+			}()
 		}
 	}
 
-	// make sure we don't exit
-	<-make(chan struct{})
+	go http.ListenAndServe(*apiAddr, service())
+
+	<-done
+	log.Println("Waiting for things to get cleaned up...")
+	time.Sleep(time.Second)
 }

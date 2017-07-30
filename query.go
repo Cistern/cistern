@@ -9,12 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/Preetam/lm2"
-)
-
-var (
-	errNotFound = errors.New("cistern: not found")
 )
 
 type QueryDesc struct {
@@ -332,38 +326,6 @@ CursorLoop:
 	return QueryResult{Summary: summaryEvents, Series: seriesEvents, Events: resultEvents, Query: desc}, nil
 }
 
-func cursorGet(cur *lm2.Cursor, key string) (string, error) {
-	cur.Seek(key)
-	for cur.Next() {
-		if cur.Key() > key {
-			break
-		}
-		if cur.Key() == key {
-			return cur.Value(), nil
-		}
-	}
-	if err := cur.Err(); err != nil {
-		return "", err
-	}
-	return "", errNotFound
-}
-
-func splitID(id string) (int64, string, string, error) {
-	parts := strings.Split(id, "|")
-	if len(parts) != 3 {
-		if len(parts) == 2 {
-			parts = append(parts, "")
-		} else {
-			return 0, "", "", errors.New("invalid ID 1")
-		}
-	}
-	ts, err := strconv.ParseInt(parts[0], 10, 64)
-	if err != nil {
-		return 0, "", "", err
-	}
-	return ts, parts[1], parts[2], nil
-}
-
 func splitCollectionID(id string) (int64, string, string, error) {
 	if len(id) < 1 {
 		return 0, "", "", errors.New("invalid ID 2")
@@ -405,33 +367,6 @@ func splitCollectionID(id string) (int64, string, string, error) {
 	}
 
 	return ts, parts[0], parts[1], nil
-}
-
-func validateID(id string) bool {
-	parts := strings.Split(id, "-")
-	if len(parts) != 3 {
-		if len(parts) == 2 {
-			parts = append(parts, "")
-		} else {
-			return false
-		}
-	}
-
-	_, err := strconv.ParseInt(parts[0], 10, 64)
-	if err != nil {
-		return false
-	}
-
-	return eventIDTagRegexp.MatchString(parts[1]) &&
-		((len(parts[2]) > 0 && eventIDHashRegexp.MatchString(parts[2])) || len(parts[2]) == 0)
-}
-
-func parseFilter(filter string) (string, string, error) {
-	parts := strings.Split(filter, "=")
-	if len(parts) != 2 {
-		return "", "", errors.New("invalid filter")
-	}
-	return parts[0], parts[1], nil
 }
 
 func checkEquals(a, b interface{}) bool {

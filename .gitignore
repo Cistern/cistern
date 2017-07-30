@@ -6,3 +6,4 @@ cistern
 !vendor/*
 cistern.json
 data/
+.DS_Store

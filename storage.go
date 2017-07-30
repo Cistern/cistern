@@ -13,8 +13,7 @@ import (
 var (
 	ErrDoesNotExist = errors.New("cistern: does not exist")
 
-	eventIDTagRegexp  = regexp.MustCompile("^[a-zA-Z0-9_./-]{1,256}$")
-	eventIDHashRegexp = regexp.MustCompile("^[a-zA-Z0-9]{1,16}$")
+	eventIDTagRegexp = regexp.MustCompile("^[a-zA-Z0-9_./-]{1,256}$")
 
 	minTimestamp = time.Unix(0, 0)
 )

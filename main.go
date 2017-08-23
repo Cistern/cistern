@@ -17,6 +17,7 @@ var (
 	DataDir         = "./data/"
 	Collections     = map[string]*EventCollection{}
 	collectionsLock sync.Mutex
+	version         = "0.1.1"
 )
 
 func main() {
@@ -25,15 +26,17 @@ func main() {
 	flag.StringVar(&DataDir, "data-dir", DataDir, "Data directory")
 	flag.Parse()
 
+	log.Printf("Cistern v%s starting", version)
+
 	configFileData, err := ioutil.ReadFile(*configFilePath)
 	if err != nil {
-		log.Fatal("failed to read config file:", err)
+		log.Fatal("Failed to read config file:", err)
 	}
 
 	config := Config{}
 	err = json.Unmarshal(configFileData, &config)
 	if err != nil {
-		log.Fatal("not a valid config file:", err)
+		log.Fatal("Not a valid config file:", err)
 	}
 
 	sigs := make(chan os.Signal, 1)

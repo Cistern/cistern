@@ -250,7 +250,7 @@ func captureFlowLogs(groupName string, retention int, done chan struct{}) error 
 		select {
 		case <-timer.C:
 		case <-stop:
-			log.Println("stopping", groupName)
+			log.Println("Stopping", groupName)
 			eventCollection.col.Close()
 			return nil
 		}

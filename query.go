@@ -38,6 +38,13 @@ type Filter struct {
 	Value     interface{} `json:"value"`
 }
 
+type QueryResult struct {
+	Summary []Event     `json:"summary,omitempty"`
+	Series  []Event     `json:"series,omitempty"`
+	Events  []Event     `json:"events,omitempty"`
+	Query   interface{} `json:"query"`
+}
+
 type ByTimestamp []Event
 
 func (t ByTimestamp) Len() int      { return len(t) }
@@ -62,7 +69,7 @@ func (o OrderBy) Less(i, j int) bool {
 	return true
 }
 
-func (c *EventCollection) Query(desc QueryDesc) (interface{}, error) {
+func (c *EventCollection) Query(desc QueryDesc) (*QueryResult, error) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
@@ -159,6 +166,9 @@ CursorLoop:
 			// No group by or aggregates
 			event["_ts"] = fromMicrosecondTime(ts)
 			resultEvents = append(resultEvents, event)
+			if desc.Limit > 0 && len(resultEvents) == desc.Limit {
+				break
+			}
 			continue
 		}
 
@@ -316,14 +326,7 @@ CursorLoop:
 		sort.Sort(ByTimestamp(seriesEvents))
 	}
 
-	type QueryResult struct {
-		Summary []Event     `json:"summary,omitempty"`
-		Series  []Event     `json:"series,omitempty"`
-		Events  []Event     `json:"events,omitempty"`
-		Query   interface{} `json:"query"`
-	}
-
-	return QueryResult{Summary: summaryEvents, Series: seriesEvents, Events: resultEvents, Query: desc}, nil
+	return &QueryResult{Summary: summaryEvents, Series: seriesEvents, Events: resultEvents, Query: desc}, nil
 }
 
 func splitCollectionID(id string) (int64, string, string, error) {

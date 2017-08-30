@@ -1,8 +1,10 @@
 package main
 
 import (
+	"crypto/md5"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"math"
 	"sort"
@@ -277,6 +279,8 @@ CursorLoop:
 			fieldName := columnDesc.Aggregate + "(" + columnDesc.Name + ")"
 			event[fieldName] = rowAggregates[i]
 		}
+		rowKeyHash := md5.Sum([]byte(rowKey))
+		event["_group_id"] = fmt.Sprintf("%x", rowKeyHash[:8])
 		summaryEvents = append(summaryEvents, event)
 	}
 
@@ -319,6 +323,8 @@ CursorLoop:
 					fieldName := columnDesc.Aggregate + "(" + columnDesc.Name + ")"
 					event[fieldName] = rowAggregates[i]
 				}
+				rowKeyHash := md5.Sum([]byte(rowKey))
+				event["_group_id"] = fmt.Sprintf("%x", rowKeyHash[:8])
 				seriesEvents = append(seriesEvents, event)
 			}
 		}

@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/Cistern/cistern/internal/query"
+)
 
 func TestLimit(t *testing.T) {
 	ec, err := CreateEventCollection("/tmp/test_cistern_limit.lm2")
@@ -14,7 +18,7 @@ func TestLimit(t *testing.T) {
 	}
 
 	const limit = 5
-	result, err := ec.Query(QueryDesc{
+	result, err := ec.Query(query.Desc{
 		Limit: limit,
 	})
 	if err != nil {

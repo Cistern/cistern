@@ -11,34 +11,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/Cistern/cistern/internal/query"
 )
-
-type QueryDesc struct {
-	Columns    []ColumnDesc `json:"columns,omitempty"`
-	TimeRange  TimeRange    `json:"time_range"`
-	GroupBy    []string     `json:"group_by,omitempty"`
-	Filters    []Filter     `json:"filters,omitempty"`
-	PointSize  int64        `json:"point_size,omitempty"`
-	OrderBy    []string     `json:"order_by,omitempty"`
-	Descending bool         `json:"descending"`
-	Limit      int          `json:"limit,omitempty"`
-}
-
-type ColumnDesc struct {
-	Name      string `json:"name"`
-	Aggregate string `json:"aggregate,omitempty"`
-}
-
-type TimeRange struct {
-	Start time.Time `json:"start"`
-	End   time.Time `json:"end"`
-}
-
-type Filter struct {
-	Column    string      `json:"column"`
-	Condition string      `json:"condition"`
-	Value     interface{} `json:"value"`
-}
 
 type QueryResult struct {
 	Summary []Event     `json:"summary,omitempty"`
@@ -71,7 +46,7 @@ func (o OrderBy) Less(i, j int) bool {
 	return true
 }
 
-func (c *EventCollection) Query(desc QueryDesc) (*QueryResult, error) {
+func (c *EventCollection) Query(desc query.Desc) (*QueryResult, error) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
@@ -179,7 +154,7 @@ CursorLoop:
 		if len(desc.GroupBy) > 0 {
 			rowKeyParts := []string{}
 			for _, groupCol := range desc.GroupBy {
-				groupColVal := event[groupCol]
+				groupColVal := event[groupCol.Name] // TODO: support aggregates on grouped columns
 				if groupColVal == nil {
 					continue CursorLoop
 				}
@@ -263,7 +238,7 @@ CursorLoop:
 		if len(desc.GroupBy) > 0 {
 			parts := strings.Split(rowKey, "\x00")
 			for i, part := range parts {
-				if desc.GroupBy[i] == "_ts" {
+				if desc.GroupBy[i].Name == "_ts" { // TODO: support aggregates on grouped columns
 					ts, _ := strconv.Atoi(part)
 					event["_ts"] = fromMicrosecondTime(int64(ts))
 					continue
@@ -272,7 +247,7 @@ CursorLoop:
 				dec := json.NewDecoder(strings.NewReader(part))
 				dec.UseNumber()
 				dec.Decode(&val)
-				event[desc.GroupBy[i]] = val
+				event[desc.GroupBy[i].Name] = val // TODO: support aggregates on grouped columns
 			}
 		}
 		for i, columnDesc := range desc.Columns {
@@ -285,8 +260,12 @@ CursorLoop:
 	}
 
 	if len(desc.OrderBy) != 0 {
+		orderByColumns := []string{}
+		for _, desc := range desc.OrderBy {
+			orderByColumns = append(orderByColumns, desc.Name) // TODO: support aggregates on grouped columns
+		}
 		var ordering sort.Interface = OrderBy{
-			columns: desc.OrderBy,
+			columns: orderByColumns,
 			events:  summaryEvents,
 		}
 		if desc.Descending {
@@ -309,14 +288,14 @@ CursorLoop:
 				if len(desc.GroupBy) > 0 {
 					parts := strings.Split(rowKey, "\x00")
 					for i, part := range parts {
-						if desc.GroupBy[i] == "_ts" {
+						if desc.GroupBy[i].Name == "_ts" { // TODO: support aggregates on grouped columns
 							continue
 						}
 						var val interface{}
 						dec := json.NewDecoder(strings.NewReader(part))
 						dec.UseNumber()
 						dec.Decode(&val)
-						event[desc.GroupBy[i]] = val
+						event[desc.GroupBy[i].Name] = val // TODO: support aggregates on grouped columns
 					}
 				}
 				for i, columnDesc := range desc.Columns {

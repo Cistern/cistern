@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
+	"github.com/Cistern/cistern/internal/query"
 	"github.com/Preetam/siesta"
 )
 
@@ -13,6 +15,9 @@ func service() *siesta.Service {
 	service.Route("POST", "/collections/:collection/query", "query a collection", func(w http.ResponseWriter, r *http.Request) {
 		var params siesta.Params
 		collectionName := params.String("collection", "", "collection name")
+		queryString := params.String("query", "", "query string")
+		start := params.Int64("start", 0, "Start Unix timestamp")
+		end := params.Int64("end", 0, "End Unix timestamp")
 		err := params.Parse(r.Form)
 		if err != nil {
 			log.Println(err)
@@ -29,15 +34,19 @@ func service() *siesta.Service {
 			return
 		}
 
-		queryDesc := QueryDesc{}
-		err = json.NewDecoder(r.Body).Decode(&queryDesc)
+		queryDesc, err := query.Parse(*queryString)
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		result, err := collection.Query(queryDesc)
+		log.Println("Got query", *queryString)
+
+		queryDesc.TimeRange.Start = time.Unix(*start, 0)
+		queryDesc.TimeRange.End = time.Unix(*end, 0)
+
+		result, err := collection.Query(*queryDesc)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Println(err)

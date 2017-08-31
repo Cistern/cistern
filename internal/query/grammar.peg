@@ -1,0 +1,185 @@
+package query
+
+type parser Peg {
+	expression
+}
+
+#### Query
+
+Query <- _ ColumnExpr? _ GroupExpr? _ FilterExpr? _ OrderByExpr? _ LimitExpr? _ PointSizeExpr? _ !.
+
+#### Main expressions
+
+ColumnExpr <-
+  "SELECT" _ { p.currentSection = "columns" }
+  Columns
+
+GroupExpr <-
+  "GROUP BY" _ { p.currentSection = "group by" }
+  Columns
+
+FilterExpr <-
+  "FILTER" _
+  LogicExpr (_ COMMA? LogicExpr)*
+
+OrderByExpr <-
+  "ORDER BY" _ { p.currentSection = "order by" }
+  Columns
+  Descending ?
+
+LimitExpr <-
+  "LIMIT" _
+  < Unsigned > { p.SetLimit(text) }
+
+PointSizeExpr <-
+  "POINT SIZE" _
+  < Duration > { p.SetPointSize(text) }
+
+#### Columns
+
+Columns <-
+  Column
+  (
+    COMMA
+    Column
+  )*
+
+Column <-
+  { p.AddColumn() }
+  (
+    ColumnAggregation
+    / < Identifier > _ { p.SetColumnName(text) }
+  )
+
+ColumnAggregation <-
+  < Identifier >           { p.SetColumnAggregate(text) }
+  LPAR < Identifier > RPAR { p.SetColumnName(text)      }
+
+#### Filter expressions
+
+LogicExpr <-
+  (
+    LPAR
+    LogicExpr
+    RPAR
+  )
+  /
+  (
+    { p.AddFilter() }
+    FilterKey
+    _ FilterCondition _
+    FilterValue
+  )
+
+OPERATOR <-
+  "eq"
+  / "neq"
+
+FilterKey <-
+  < Identifier > { p.SetFilterColumn(text) }
+
+FilterCondition <-
+  < OPERATOR > { p.SetFilterCondition(text) }
+
+FilterValue <-
+  < Value > { p.SetFilterValue(text) }
+
+Value <-
+  Float
+  / Integer
+  / String
+
+#### Order
+
+Descending <-
+  "DESC" { p.SetDescending() }
+
+#### Strings
+
+String
+  <- (["] < StringChar* > ["])+
+
+StringChar
+  <- Escape / ![\"\n\\] .
+
+Escape
+  <- SimpleEscape
+  / OctalEscape
+  / HexEscape
+  / UniversalCharacter
+
+SimpleEscape
+  <- '\\' ['\"?\\abfnrtv]
+
+OctalEscape
+  <- '\\' [0-7][0-7]?[0-7]?
+
+HexEscape
+  <- '\\x' HexDigit+
+
+UniversalCharacter
+   <- '\\u' HexQuad
+    / '\\U' HexQuad HexQuad
+
+HexQuad
+  <- HexDigit HexDigit HexDigit HexDigit
+
+HexDigit
+  <- [a-f] / [A-F] / [0-9]
+
+##### Numbers
+
+Unsigned <-
+  [0-9]+
+
+Sign <-
+  '-' / '+'
+
+Integer
+  <- < Sign? Unsigned >
+
+Float <-
+  Integer ('.' Unsigned)?
+  ( ('e' / 'E' ) Integer )?
+
+Duration <-
+  Integer ('.' Unsigned)?
+  ( 'ns' / 'us' / 'µs' / 'ms' / 's' / 'm' / 'h')
+
+#### Identifiers
+
+Identifier <-
+  !Keyword < [a-zA-Z_] IdChar* >
+
+IdChar <-
+  [a-zA-Z0-9_]
+
+Keyword <-
+  ('select'
+  / 'group by'
+  / 'filters'
+  / 'order by'
+  / 'desc'
+  / 'limit'
+  / 'eq'
+  / 'neq') !IdChar
+
+#### Whitespace
+
+_ <-
+  (
+    ' '
+    / '\t'
+    / '\r\n'
+    / '\n'
+    / '\r'
+  )*
+
+#### Misc
+
+LPAR <-
+  _ '(' _
+RPAR <-
+  _ ')' _
+COMMA <-
+  _ ',' _

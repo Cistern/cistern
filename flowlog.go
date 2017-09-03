@@ -1,10 +1,8 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"path/filepath"
@@ -15,39 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 )
-
-type FlowLogState struct {
-	LastTimestamp int64  `json:"last_timestamp"`
-	LastEventID   string `json:"last_event"`
-
-	filename string
-}
-
-func (s *FlowLogState) Store() error {
-	data, err := json.Marshal(s)
-	if err != nil {
-		return err
-	}
-	err = ioutil.WriteFile(s.filename, data, 0600)
-	return err
-}
-
-func (s *FlowLogState) Load() error {
-	data, err := ioutil.ReadFile(s.filename)
-	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(data, s)
-	return err
-}
-
-func NewFlowLogState(filename string) (*FlowLogState, error) {
-	state := &FlowLogState{
-		filename: filename,
-	}
-	state.Load()
-	return state, state.Store()
-}
 
 // version account-id interface-id srcaddr dstaddr srcport dstport protocol packets bytes start end action log-status
 
@@ -208,7 +173,7 @@ func captureFlowLogs(groupName string, retention int, done chan struct{}) error 
 		stop <- struct{}{}
 	}()
 
-	stateFile, err := NewFlowLogState(filepath.Join(DataDir, groupName+".state"))
+	cwl, err := NewCloudWatchLog(cloudwatchlogs.New(session.Must(session.NewSession())), groupName)
 	if err != nil {
 		return err
 	}
@@ -235,7 +200,7 @@ func captureFlowLogs(groupName string, retention int, done chan struct{}) error 
 	const regularBatchSize = 5 * 60 * 1000         // 5 minutes
 	const catchupBatchSize = 72 * regularBatchSize // 6 hours
 
-	nextBatchStart := stateFile.LastTimestamp
+	nextBatchStart := cwl.LastTimestamp()
 	if nextBatchStart == 0 {
 		nextBatchStart = (time.Now().Unix() - 86400) * 1000
 		nextBatchStart = (nextBatchStart / regularBatchSize) * regularBatchSize
@@ -243,8 +208,6 @@ func captureFlowLogs(groupName string, retention int, done chan struct{}) error 
 
 	currentBatch := []*FlowLogRecord{}
 	timer := time.NewTimer(0)
-
-	cwl := NewCloudWatchLog(cloudwatchlogs.New(session.Must(session.NewSession())), groupName)
 
 	for {
 		select {
@@ -297,8 +260,10 @@ func captureFlowLogs(groupName string, retention int, done chan struct{}) error 
 				return err
 			}
 
-			stateFile.LastTimestamp = nextBatchStart
-			stateFile.Store()
+			err := cwl.SetLastTimestamp(nextBatchStart)
+			if err != nil {
+				return err
+			}
 		}
 		next := time.Unix((batchEnd+regularBatchSize)/1000, 0)
 		if time.Now().After(next) {

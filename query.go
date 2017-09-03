@@ -120,10 +120,7 @@ CursorLoop:
 
 		// Apply filters
 		for _, filter := range desc.Filters {
-			log.Println("====", filter.Column, filter.Condition, filter.Value)
-			log.Printf("%T", filter.Value)
 			if colValue, ok := event[filter.Column]; ok {
-				log.Printf("%T %v", colValue, colValue)
 				filterResult := false
 				switch filter.Condition {
 				case "eq":

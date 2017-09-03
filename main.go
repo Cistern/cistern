@@ -23,6 +23,7 @@ var (
 func main() {
 	configFilePath := flag.String("config", "./cistern.json", "Path to config file")
 	apiAddr := flag.String("api-addr", "localhost:2020", "API listen address")
+	uiContentPath := flag.String("ui-content", "", "Path to static UI content (enables UI)")
 	flag.StringVar(&DataDir, "data-dir", DataDir, "Data directory")
 	flag.Parse()
 
@@ -59,9 +60,23 @@ func main() {
 		}
 	}
 
-	go http.ListenAndServe(*apiAddr, service())
+	if *uiContentPath != "" {
+		handler, err := UI(*uiContentPath)
+		if err != nil {
+			log.Fatalln("Couldn't set up UI:", err)
+		}
+		http.Handle("/ui/", handler)
+	}
+
+	http.Handle("/api/", service())
+	go func() {
+		err := http.ListenAndServe(*apiAddr, nil)
+		if err != nil {
+			log.Fatalln("Couldn't start API server:", err)
+		}
+	}()
 
 	<-done
 	log.Println("Waiting for things to get cleaned up...")
-	time.Sleep(time.Second)
+	time.Sleep(250 * time.Millisecond)
 }

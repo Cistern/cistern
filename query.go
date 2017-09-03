@@ -120,7 +120,10 @@ CursorLoop:
 
 		// Apply filters
 		for _, filter := range desc.Filters {
+			log.Println("====", filter.Column, filter.Condition, filter.Value)
+			log.Printf("%T", filter.Value)
 			if colValue, ok := event[filter.Column]; ok {
+				log.Printf("%T %v", colValue, colValue)
 				filterResult := false
 				switch filter.Condition {
 				case "eq":
@@ -262,7 +265,11 @@ CursorLoop:
 	if len(desc.OrderBy) != 0 {
 		orderByColumns := []string{}
 		for _, desc := range desc.OrderBy {
-			orderByColumns = append(orderByColumns, desc.Name) // TODO: support aggregates on grouped columns
+			name := desc.Name
+			if desc.Aggregate != "" {
+				name = desc.Aggregate + "(" + name + ")"
+			}
+			orderByColumns = append(orderByColumns, name)
 		}
 		var ordering sort.Interface = OrderBy{
 			columns: orderByColumns,
@@ -277,11 +284,20 @@ CursorLoop:
 	if desc.Limit > 0 && len(summaryEvents) > desc.Limit {
 		summaryEvents = summaryEvents[:desc.Limit]
 	}
+	validGroupIDs := map[string]bool{}
+	for _, e := range summaryEvents {
+		validGroupIDs[e["_group_id"].(string)] = true
+	}
 
 	seriesEvents := []Event{}
 	if desc.PointSize > 0 {
 		for ts, rows := range summaryRowsByTime {
 			for rowKey, rowAggregates := range rows {
+				rowKeyHash := md5.Sum([]byte(rowKey))
+				groupID := fmt.Sprintf("%x", rowKeyHash[:8])
+				if !validGroupIDs[groupID] {
+					continue
+				}
 				event := Event{
 					"_ts": fromMicrosecondTime(ts * desc.PointSize),
 				}
@@ -302,8 +318,7 @@ CursorLoop:
 					fieldName := columnDesc.Aggregate + "(" + columnDesc.Name + ")"
 					event[fieldName] = rowAggregates[i]
 				}
-				rowKeyHash := md5.Sum([]byte(rowKey))
-				event["_group_id"] = fmt.Sprintf("%x", rowKeyHash[:8])
+				event["_group_id"] = groupID
 				seriesEvents = append(seriesEvents, event)
 			}
 		}

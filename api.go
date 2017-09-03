@@ -11,8 +11,14 @@ import (
 )
 
 func service() *siesta.Service {
-	service := siesta.NewService("/")
+	service := siesta.NewService("/api")
+	service.Route("OPTIONS", "/collections/:collection/query", "preflight request", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", r.Header.Get("Access-Control-Request-Headers"))
+	})
 	service.Route("POST", "/collections/:collection/query", "query a collection", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+
 		var params siesta.Params
 		collectionName := params.String("collection", "", "collection name")
 		queryString := params.String("query", "", "query string")
@@ -45,6 +51,26 @@ func service() *siesta.Service {
 
 		queryDesc.TimeRange.Start = time.Unix(*start, 0)
 		queryDesc.TimeRange.End = time.Unix(*end, 0)
+
+		if queryDesc.PointSize > 0 {
+			// Round off timestamps
+			queryDesc.TimeRange.Start = queryDesc.TimeRange.Start.Truncate(time.Duration(queryDesc.PointSize * 1000))
+			queryDesc.TimeRange.End = queryDesc.TimeRange.End.Truncate(time.Duration(queryDesc.PointSize * 1000))
+		}
+
+		log.Println(queryDesc.TimeRange)
+
+		for i, filter := range queryDesc.Filters {
+			var v interface{}
+			err := json.Unmarshal([]byte(filter.Value.(json.RawMessage)), &v)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				log.Println(err)
+				return
+			}
+			filter.Value = v
+			queryDesc.Filters[i] = filter
+		}
 
 		result, err := collection.Query(*queryDesc)
 		if err != nil {

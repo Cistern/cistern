@@ -1,0 +1,41 @@
+body {
+  background-color: white;
+  padding: 1rem;
+}
+
+.row {
+  margin-top: 1rem;
+}
+
+.chart {
+  margin: 1rem 0 1rem 0;
+  padding: 0.25rem;
+  width: 50%;
+}
+
+.chart .chart-name {
+  font-weight: bold;
+  color: #999;
+  font-size: 12px;
+}
+
+.chart-tooltip {
+  font-size: 10px;
+  margin: -1rem 0 0 -1rem;
+  padding: 10px;
+  width: 250px;
+  background-color: rgba(255, 255, 255, 0.9);
+  cursor: inherit;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.summary-table {
+  max-width: 400px;
+}
+
+.events-table {
+  font-size: 10px;
+}

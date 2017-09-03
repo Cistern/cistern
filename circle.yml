@@ -2,11 +2,16 @@ machine:
   node:
     version: 8.0.0
 
+dependencies:
+  pre:
+    - mkdir -p ~/.go_workspace/src/github.com/Cistern
+    - ln -s ~/$CIRCLE_PROJECT_REPONAME ~/.go_workspace/src/github.com/Cistern/$CIRCLE_PROJECT_REPONAME
+
 compile:
   override:
-    - go build && go build ./cmd/cistern-cli && mv cistern $CIRCLE_ARTIFACTS && mv cistern-cli $CIRCLE_ARTIFACTS
+    - cd ~/.go_workspace/src/github.com/Cistern/cistern && go build ./cmd/cistern && mv cistern $CIRCLE_ARTIFACTS
     - cd ui && npm i && npm run build && tar czvf static.tar.gz static && mv static.tar.gz $CIRCLE_ARTIFACTS
 
 test:
   override:
-    - go test $(go list ./... | grep -v /vendor/)
+    - cd ~/.go_workspace/src/github.com/Cistern/cistern && go test $(go list ./... | grep -v /vendor/)

@@ -9,9 +9,9 @@ dependencies:
 
 compile:
   override:
-    - cd ~/.go_workspace/src/github.com/Cistern/cistern && go build ./cmd/cistern && mv cistern $CIRCLE_ARTIFACTS
-    - cd ui && npm i && npm run build && tar czvf static.tar.gz static && mv static.tar.gz $CIRCLE_ARTIFACTS
+    - ./build.sh
 
 test:
   override:
     - cd ~/.go_workspace/src/github.com/Cistern/cistern && go test $(go list ./... | grep -v /vendor/)
+    - cd ~/.go_workspace/src/github.com/Cistern/cistern/ui && npm test

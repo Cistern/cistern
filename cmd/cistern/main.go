@@ -17,7 +17,7 @@ var (
 	DataDir         = "./data/"
 	Collections     = map[string]*EventCollection{}
 	collectionsLock sync.Mutex
-	version         = "0.1.1"
+	version         = "0.2.0"
 )
 
 func main() {

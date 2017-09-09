@@ -96,36 +96,36 @@ Descending <-
 
 #### Strings
 
-String
-  <- (["] < StringChar* > ["])+
+String <-
+  (["] < StringChar* > ["])+
 
-StringChar
-  <- Escape / ![\"\n\\] .
+StringChar <-
+  Escape / ![\"\n\\] .
 
-Escape
-  <- SimpleEscape
+Escape <-
+  SimpleEscape
   / OctalEscape
   / HexEscape
   / UniversalCharacter
 
-SimpleEscape
-  <- '\\' ['\"?\\abfnrtv]
+SimpleEscape <-
+  '\\' ['\"?\\abfnrtv]
 
-OctalEscape
-  <- '\\' [0-7][0-7]?[0-7]?
+OctalEscape <-
+  '\\' [0-7][0-7]?[0-7]?
 
-HexEscape
-  <- '\\x' HexDigit+
+HexEscape <-
+  '\\x' HexDigit+
 
-UniversalCharacter
-   <- '\\u' HexQuad
-    / '\\U' HexQuad HexQuad
+UniversalCharacter <-
+  '\\u' HexQuad
+  / '\\U' HexQuad HexQuad
 
-HexQuad
-  <- HexDigit HexDigit HexDigit HexDigit
+HexQuad <-
+  HexDigit HexDigit HexDigit HexDigit
 
-HexDigit
-  <- [a-f] / [A-F] / [0-9]
+HexDigit <-
+  [a-f] / [A-F] / [0-9]
 
 ##### Numbers
 
@@ -135,8 +135,8 @@ Unsigned <-
 Sign <-
   '-' / '+'
 
-Integer
-  <- < Sign? Unsigned >
+Integer <-
+  < Sign? Unsigned >
 
 Float <-
   Integer ('.' Unsigned)?

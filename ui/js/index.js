@@ -9,7 +9,9 @@ var App = {
 
 var CollectionChartPage = {
   view: function(vnode) {
-    return m("div", [ m("div", m(ChartContainer)) ]);
+    return m("div", [
+      m("div", m(ChartContainer))
+    ]);
   }
 };
 

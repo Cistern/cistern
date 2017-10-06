@@ -280,10 +280,7 @@ var ChartContainer = {
     return m("div", {style: "width: 100%;"}, [
       inputs,
 
-      m("div", resultsComponents),
-
-      // Tooltip element
-      m("div.chart-tooltip")
+      m("div", resultsComponents)
     ]);
   }
 };

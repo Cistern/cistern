@@ -21,7 +21,6 @@ body {
 
 .chart-tooltip {
   font-size: 10px;
-  margin: -1rem 0 0 -1rem;
   padding: 10px;
   width: 250px;
   background-color: rgba(255, 255, 255, 0.9);

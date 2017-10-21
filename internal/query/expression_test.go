@@ -67,7 +67,7 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
-			query: "SELECT sum(bytes) GROUP BY source_addr, dest_addr FILTER a neq \"3\" (b eq 4.3)(a eq 1) ORDER BY source_addr limit 100",
+			query: "SELECT sum(bytes) GROUP BY source_addr, dest_addr FILTER a != \"3\" (b = 4.3)(a = 1) ORDER BY source_addr limit 100",
 			expected: &Desc{
 				Columns: []ColumnDesc{
 					{Aggregate: "sum", Name: "bytes"},
@@ -77,9 +77,9 @@ func TestParse(t *testing.T) {
 					{Name: "dest_addr"},
 				},
 				Filters: []Filter{
-					{Column: "a", Condition: "neq", Value: json.RawMessage(`"3"`)},
-					{Column: "b", Condition: "eq", Value: json.RawMessage(`4.3`)},
-					{Column: "a", Condition: "eq", Value: json.RawMessage(`1`)},
+					{Column: "a", Condition: "!=", Value: json.RawMessage(`"3"`)},
+					{Column: "b", Condition: "=", Value: json.RawMessage(`4.3`)},
+					{Column: "a", Condition: "=", Value: json.RawMessage(`1`)},
 				},
 				OrderBy: []ColumnDesc{
 					{Name: "source_addr"},
@@ -88,7 +88,7 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
-			query: "select	sum(bytes) \n group by source_addr, dest_addr filter a neq \"3\" (b eq 4.3)(a eq 1) order by source_addr limit 100 point size 1h",
+			query: "select	sum(bytes) \n group by source_addr, dest_addr filter a != \"3\" (b = 4.3)(a = 1) order by source_addr limit 100 point size 1h",
 			expected: &Desc{
 				Columns: []ColumnDesc{
 					{Aggregate: "sum", Name: "bytes"},
@@ -98,9 +98,9 @@ func TestParse(t *testing.T) {
 					{Name: "dest_addr"},
 				},
 				Filters: []Filter{
-					{Column: "a", Condition: "neq", Value: json.RawMessage(`"3"`)},
-					{Column: "b", Condition: "eq", Value: json.RawMessage(`4.3`)},
-					{Column: "a", Condition: "eq", Value: json.RawMessage(`1`)},
+					{Column: "a", Condition: "!=", Value: json.RawMessage(`"3"`)},
+					{Column: "b", Condition: "=", Value: json.RawMessage(`4.3`)},
+					{Column: "a", Condition: "=", Value: json.RawMessage(`1`)},
 				},
 				OrderBy: []ColumnDesc{
 					{Name: "source_addr"},

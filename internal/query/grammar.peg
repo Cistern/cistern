@@ -72,8 +72,13 @@ LogicExpr <-
   )
 
 OPERATOR <-
-  "eq"
-  / "neq"
+  '='
+  / '!='
+  / '<'
+  / '<='
+  / '>'
+  / '>='
+  / "matches"
 
 FilterKey <-
   < Identifier > { p.SetFilterColumn(text) }
@@ -160,9 +165,7 @@ Keyword <-
   / 'filters'
   / 'order by'
   / 'desc'
-  / 'limit'
-  / 'eq'
-  / 'neq') !IdChar
+  / 'limit') !IdChar
 
 #### Whitespace
 

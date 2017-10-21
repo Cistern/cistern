@@ -61,6 +61,11 @@ func (c *EventCollection) Query(desc query.Desc) (*QueryResult, error) {
 		desc.TimeRange.End = fromMicrosecondTime(math.MaxInt64)
 	}
 
+	filters, err := buildFilters(desc.Filters)
+	if err != nil {
+		return nil, err
+	}
+
 	cur, err := c.col.NewCursor()
 	if err != nil {
 		return nil, err
@@ -119,22 +124,8 @@ CursorLoop:
 		event["_id"] = eventID
 
 		// Apply filters
-		for _, filter := range desc.Filters {
-			if colValue, ok := event[filter.Column]; ok {
-				filterResult := false
-				switch filter.Condition {
-				case "eq":
-					filterResult = checkEquals(colValue, filter.Value)
-				case "neq":
-					filterResult = !checkEquals(colValue, filter.Value)
-				default:
-					return nil, errors.New("invalid filter condition")
-				}
-
-				if !filterResult {
-					continue CursorLoop
-				}
-			} else {
+		for _, filter := range filters {
+			if !filter.Filter(event) {
 				continue CursorLoop
 			}
 		}
@@ -367,53 +358,4 @@ func splitCollectionID(id string) (int64, string, string, error) {
 	}
 
 	return ts, parts[0], parts[1], nil
-}
-
-func checkEquals(a, b interface{}) bool {
-	return compareInterfaces(a, b) == 0
-}
-
-func compareInterfaces(a, b interface{}) int {
-	switch a.(type) {
-	case int:
-		aInt := a.(int)
-		if bInt, ok := b.(int); ok {
-			return aInt - bInt
-		}
-	case float64:
-		aFloat := a.(float64)
-		if bFloat, ok := b.(float64); ok {
-			if aFloat == bFloat {
-				return 0
-			} else if aFloat < bFloat {
-				return -1
-			} else {
-				return 1
-			}
-		}
-	case string:
-		aString := a.(string)
-		if bString, ok := b.(string); ok {
-			if aString == bString {
-				return 0
-			} else if aString < bString {
-				return -1
-			} else {
-				return 1
-			}
-		}
-	case json.Number:
-		aFloat, _ := strconv.ParseFloat(string(a.(json.Number)), 64)
-		if bNumber, ok := b.(json.Number); ok {
-			bFloat, _ := strconv.ParseFloat(string(bNumber), 64)
-			if aFloat == bFloat {
-				return 0
-			} else if aFloat < bFloat {
-				return -1
-			} else {
-				return 1
-			}
-		}
-	}
-	return -1
 }

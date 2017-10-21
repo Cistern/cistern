@@ -58,8 +58,6 @@ func service() *siesta.Service {
 			queryDesc.TimeRange.End = queryDesc.TimeRange.End.Truncate(time.Duration(queryDesc.PointSize * 1000))
 		}
 
-		log.Println(queryDesc.TimeRange)
-
 		for i, filter := range queryDesc.Filters {
 			var v interface{}
 			err := json.Unmarshal([]byte(filter.Value.(json.RawMessage)), &v)

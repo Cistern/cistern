@@ -77,6 +77,11 @@ func main() {
 
 	http.Handle("/api/", service())
 	go func() {
+		log.Println("Listening on", *apiAddr)
+		log.Printf("API endpoint is http://%s/api/", *apiAddr)
+		if *uiContentPath != "" {
+			log.Printf("UI endpoint is http://%s/ui/", *apiAddr)
+		}
 		err := http.ListenAndServe(*apiAddr, nil)
 		if err != nil {
 			log.Fatalln("Couldn't start API server:", err)
@@ -86,4 +91,5 @@ func main() {
 	<-done
 	log.Println("Waiting for things to get cleaned up...")
 	time.Sleep(250 * time.Millisecond)
+	log.Println("Exiting.")
 }

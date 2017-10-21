@@ -101,6 +101,9 @@ func (r *FlowLogRecord) Parse(s string) error {
 
 func (r *FlowLogRecord) ToEvent() Event {
 	return Event{
+		"version":        r.Version,
+		"account_id":     r.AccountID,
+		"interface_id":   r.InterfaceID,
 		"source_address": r.SourceAddress,
 		"dest_address":   r.DestAddress,
 		"source_port":    r.SourcePort,
@@ -108,62 +111,18 @@ func (r *FlowLogRecord) ToEvent() Event {
 		"protocol":       r.Protocol,
 		"packets":        r.Packets,
 		"bytes":          r.Bytes,
+		"start":          r.Start.Format(time.RFC3339Nano),
+		"end":            r.End.Format(time.RFC3339Nano),
+		"action":         r.Action,
+		"log_status":     r.LogStatus,
 		"_ts":            r.Timestamp.Format(time.RFC3339Nano),
 		"_tag":           r.StreamName,
 	}
 }
 
-func groupFlowRecords(records []*FlowLogRecord) []FlowLogRecord {
-	type groupKey struct {
-		Timestamp     time.Time
-		SourceAddress [16]byte
-		DestAddress   [16]byte
-		SourcePort    int
-		DestPort      int
-		Protocol      int
-	}
-	groups := map[groupKey]*FlowLogRecord{}
-	for _, rec := range records {
-		key := groupKey{
-			Timestamp:     rec.Timestamp.Truncate(time.Minute * 10),
-			SourceAddress: ipTo16Bytes(rec.SourceAddress),
-			DestAddress:   ipTo16Bytes(rec.DestAddress),
-			SourcePort:    rec.SourcePort,
-			DestPort:      rec.DestPort,
-			Protocol:      rec.Protocol,
-		}
-		groupRec := groups[key]
-		if groupRec == nil {
-			groupRec = &FlowLogRecord{
-				Timestamp:     key.Timestamp,
-				SourceAddress: net.IP(key.SourceAddress[:]),
-				DestAddress:   net.IP(key.DestAddress[:]),
-				SourcePort:    key.SourcePort,
-				DestPort:      key.DestPort,
-				Protocol:      key.Protocol,
-			}
-			groups[key] = groupRec
-		}
-		groupRec.Bytes += rec.Bytes
-		groupRec.Packets += rec.Packets
-	}
-
-	result := []FlowLogRecord{}
-	for _, rec := range groups {
-		result = append(result, *rec)
-	}
-	return result
-}
-
-func ipTo16Bytes(ip net.IP) [16]byte {
-	result := [16]byte{}
-	copy(result[:], ip.To16())
-	return result
-}
-
 func captureFlowLogs(groupName string, retention int, done chan struct{}) error {
 	if retention == 0 {
-		retention = 3
+		retention = 7
 		log.Printf("Missing retention for %s; defaulting to %d days", groupName, retention)
 	}
 	stop := make(chan struct{}, 1)
@@ -197,39 +156,32 @@ func captureFlowLogs(groupName string, retention int, done chan struct{}) error 
 
 	eventCollection.SetRetention(retention)
 
-	const regularBatchSize = 5 * 60 * 1000         // 5 minutes
-	const catchupBatchSize = 72 * regularBatchSize // 6 hours
-
 	nextBatchStart := cwl.LastTimestamp()
-	if nextBatchStart == 0 {
-		nextBatchStart = (time.Now().Unix() - 86400) * 1000
-		nextBatchStart = (nextBatchStart / regularBatchSize) * regularBatchSize
-	}
-
 	currentBatch := []*FlowLogRecord{}
 	timer := time.NewTimer(0)
 
+	log.Println("Starting poll of flow log group", groupName)
+
 	for {
+		lastTime := time.Unix((nextBatchStart)/1000, 0)
+		if time.Now().Sub(lastTime) <= 5*time.Minute {
+			// Last event was within 5 minutes, so wait a minute
+			// before next poll.
+			timer.Reset(time.Minute)
+		} else {
+			// Catching up, so only wait 5 seconds.
+			timer.Reset(5 * time.Second)
+		}
+
 		select {
 		case <-timer.C:
 		case <-stop:
-			log.Println("Stopping", groupName)
+			log.Println("Stopping poll of flow log group", groupName)
 			eventCollection.col.Close()
 			return nil
 		}
 
-		batchSize := int64(regularBatchSize)
-		if now := time.Now().Unix() * 1000; now-nextBatchStart > 6*regularBatchSize {
-			batchSize = now - nextBatchStart
-			batchSize = (batchSize / regularBatchSize) * regularBatchSize
-			if batchSize > catchupBatchSize {
-				batchSize = catchupBatchSize
-			}
-		}
-
-		batchEnd := nextBatchStart + batchSize - 1
-
-		logEvents, err := cwl.GetLogEvents(nextBatchStart, batchEnd)
+		logEvents, err := cwl.GetLogEvents(nextBatchStart)
 		if err != nil {
 			return err
 		}
@@ -243,35 +195,32 @@ func captureFlowLogs(groupName string, retention int, done chan struct{}) error 
 				rec.StreamName = *e.LogStreamName
 				currentBatch = append(currentBatch, rec)
 			}
+
+			if nextBatchStart < *e.Timestamp {
+				nextBatchStart = *e.Timestamp
+			}
 		}
 
-		grouped := groupFlowRecords(currentBatch)
 		events := []Event{}
-		for _, rec := range grouped {
+		for _, rec := range currentBatch {
 			event := rec.ToEvent()
-			event["_tag"] = "flowlog"
+			event["_tag"] = rec.StreamName
 			events = append(events, event)
 		}
 
 		if len(logEvents) > 0 {
-			log.Printf("Flow Logs group %s: aggregated %d events", groupName, len(logEvents))
+			log.Printf("Logs group %s: aggregated %d events", groupName, len(logEvents))
 			err = eventCollection.StoreEvents(events)
 			if err != nil {
 				return err
 			}
-
-			err := cwl.SetLastTimestamp(nextBatchStart)
+			nextBatchStart += 1
+			err = cwl.SetLastTimestamp(nextBatchStart)
 			if err != nil {
 				return err
 			}
 		}
-		next := time.Unix((batchEnd+regularBatchSize)/1000, 0)
-		if time.Now().After(next) {
-			timer.Reset(0)
-		} else {
-			timer.Reset(next.Sub(time.Now()) + time.Second)
-		}
-		nextBatchStart = batchEnd + 1
+
 		currentBatch = currentBatch[:0]
 	}
 }

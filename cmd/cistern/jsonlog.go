@@ -12,7 +12,7 @@ import (
 
 func captureJSONLogs(groupName string, retention int, done chan struct{}) error {
 	if retention == 0 {
-		retention = 3
+		retention = 7
 		log.Printf("Missing retention for %s; defaulting to %d days", groupName, retention)
 	}
 	stop := make(chan struct{}, 1)
@@ -46,39 +46,32 @@ func captureJSONLogs(groupName string, retention int, done chan struct{}) error 
 
 	eventCollection.SetRetention(retention)
 
-	const regularBatchSize = 5 * 60 * 1000         // 5 minutes
-	const catchupBatchSize = 72 * regularBatchSize // 6 hours
-
 	nextBatchStart := cwl.LastTimestamp()
-	if nextBatchStart == 0 {
-		nextBatchStart = (time.Now().Unix() - 86400) * 1000
-		nextBatchStart = (nextBatchStart / regularBatchSize) * regularBatchSize
-	}
-
 	currentBatch := []Event{}
 	timer := time.NewTimer(0)
 
+	log.Println("Starting poll of JSON log group", groupName)
+
 	for {
+		lastTime := time.Unix((nextBatchStart)/1000, 0)
+		if time.Now().Sub(lastTime) <= 5*time.Minute {
+			// Last event was within 5 minutes, so wait a minute
+			// before next poll.
+			timer.Reset(time.Minute)
+		} else {
+			// Catching up, so only wait 5 seconds.
+			timer.Reset(5 * time.Second)
+		}
+
 		select {
 		case <-timer.C:
 		case <-stop:
-			log.Println("Stopping", groupName)
+			log.Println("Stopping poll of JSON log group", groupName)
 			eventCollection.col.Close()
 			return nil
 		}
 
-		batchSize := int64(regularBatchSize)
-		if now := time.Now().Unix() * 1000; now-nextBatchStart > 6*regularBatchSize {
-			batchSize = now - nextBatchStart
-			batchSize = (batchSize / regularBatchSize) * regularBatchSize
-			if batchSize > catchupBatchSize {
-				batchSize = catchupBatchSize
-			}
-		}
-
-		batchEnd := nextBatchStart + batchSize - 1
-
-		logEvents, err := cwl.GetLogEvents(nextBatchStart, batchEnd)
+		logEvents, err := cwl.GetLogEvents(nextBatchStart)
 		if err != nil {
 			return err
 		}
@@ -91,6 +84,10 @@ func captureJSONLogs(groupName string, retention int, done chan struct{}) error 
 				event["_ts"] = timestamp.Format(time.RFC3339Nano)
 				event["_tag"] = *e.LogStreamName
 				currentBatch = append(currentBatch, event)
+
+				if nextBatchStart < *e.Timestamp {
+					nextBatchStart = *e.Timestamp
+				}
 			}
 		}
 
@@ -101,19 +98,13 @@ func captureJSONLogs(groupName string, retention int, done chan struct{}) error 
 			if err != nil {
 				return err
 			}
-
-			err := cwl.SetLastTimestamp(nextBatchStart)
+			nextBatchStart += 1
+			err = cwl.SetLastTimestamp(nextBatchStart)
 			if err != nil {
 				return err
 			}
 		}
-		next := time.Unix((batchEnd+regularBatchSize)/1000, 0)
-		if time.Now().After(next) {
-			timer.Reset(0)
-		} else {
-			timer.Reset(next.Sub(time.Now()) + time.Second)
-		}
-		nextBatchStart = batchEnd + 1
+
 		currentBatch = currentBatch[:0]
 	}
 }

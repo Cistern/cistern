@@ -60,7 +60,7 @@ func NewCloudWatchLog(svc *cloudwatchlogs.CloudWatchLogs, logGroupName string) (
 }
 
 // GetLogEvents gets log events from the log group.
-func (cwl *CloudWatchLog) GetLogEvents(start, end int64) ([]*cloudwatchlogs.FilteredLogEvent, error) {
+func (cwl *CloudWatchLog) GetLogEvents(start int64) ([]*cloudwatchlogs.FilteredLogEvent, error) {
 	result := []*cloudwatchlogs.FilteredLogEvent{}
 	limit := int64(10000)
 	var token *string
@@ -71,7 +71,6 @@ func (cwl *CloudWatchLog) GetLogEvents(start, end int64) ([]*cloudwatchlogs.Filt
 			Limit:        &limit,
 			NextToken:    token,
 			StartTime:    &start,
-			EndTime:      &end,
 			Interleaved:  &interleaved,
 		})
 		if err != nil {

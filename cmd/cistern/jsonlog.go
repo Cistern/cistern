@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"hash/crc32"
 	"log"
 	"path/filepath"
 	"time"
@@ -9,6 +11,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 )
+
+func hashMessage(message string) string {
+	return fmt.Sprintf("%x", crc32.ChecksumIEEE([]byte(message)))
+}
 
 func captureJSONLogs(groupName string, retention int, done chan struct{}) error {
 	if retention == 0 {
@@ -83,6 +89,8 @@ func captureJSONLogs(groupName string, retention int, done chan struct{}) error 
 				timestamp := time.Unix(*e.Timestamp/1000, (*e.Timestamp%1000)*1000000)
 				event["_ts"] = timestamp.Format(time.RFC3339Nano)
 				event["_tag"] = *e.LogStreamName
+				event["_hash"] = hashMessage(*e.Message)
+
 				currentBatch = append(currentBatch, event)
 
 				if nextBatchStart < *e.Timestamp {

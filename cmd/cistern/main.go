@@ -76,6 +76,7 @@ func main() {
 	}
 
 	http.Handle("/api/", service())
+	http.Handle("/1/batch/", honeycombService())
 	go func() {
 		log.Println("Listening on", *apiAddr)
 		log.Printf("API endpoint is http://%s/api/", *apiAddr)

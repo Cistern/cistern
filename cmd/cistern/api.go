@@ -1,9 +1,12 @@
 package main
 
 import (
+	"compress/gzip"
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
+	"path/filepath"
 	"time"
 
 	"github.com/Cistern/cistern/internal/query"
@@ -33,11 +36,20 @@ func service() *siesta.Service {
 
 		collectionsLock.Lock()
 		collection, present := Collections[*collectionName]
-		collectionsLock.Unlock()
 
 		if !present {
-			w.WriteHeader(http.StatusNotFound)
-			return
+			collection, err = OpenEventCollection(filepath.Join(DataDir, *collectionName+".lm2"))
+			if err != nil {
+				collectionsLock.Unlock()
+				if err == ErrDoesNotExist {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			Collections[*collectionName] = collection
+			collectionsLock.Unlock()
 		}
 
 		queryDesc, err := query.Parse(*queryString)
@@ -103,6 +115,81 @@ func service() *siesta.Service {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Println(err)
 		}
+	})
+	return service
+}
+
+func honeycombService() *siesta.Service {
+	service := siesta.NewService("/1/batch")
+	service.Route("POST", "/:collection", "Post an event", func(w http.ResponseWriter, r *http.Request) {
+		var params siesta.Params
+		collectionName := params.String("collection", "", "collection name")
+		err := params.Parse(r.Form)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		var body io.Reader = r.Body
+
+		if r.Header.Get("Content-Encoding") == "gzip" {
+			gzipReader, err := gzip.NewReader(r.Body)
+			if err != nil {
+				log.Println(err)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			body = gzipReader
+		}
+
+		type payloadElem struct {
+			Time string `json:"time"`
+			Data Event  `json:"data"`
+		}
+		var payload []payloadElem
+		err = json.NewDecoder(body).Decode(&payload)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		events := []Event{}
+		for _, p := range payload {
+			e := p.Data
+			e["_ts"] = p.Time
+			e["_tag"] = "rds"
+			events = append(events, e)
+		}
+
+		collectionsLock.Lock()
+		defer collectionsLock.Unlock()
+
+		collection, present := Collections[*collectionName]
+		if !present {
+			collection, err = OpenEventCollection(filepath.Join(DataDir, *collectionName+".lm2"))
+			if err != nil {
+				if err == ErrDoesNotExist {
+					collection, err = CreateEventCollection(filepath.Join(DataDir, *collectionName+".lm2"))
+				}
+				if err != nil {
+					log.Println(err)
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+			}
+			Collections[*collectionName] = collection
+		}
+
+		err = collection.StoreEvents(events)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		log.Println("stored events", events)
 	})
 	return service
 }

@@ -124,11 +124,11 @@ var ChartContainer = {
     var summaryTable;
     if (summaryRows) {
       var headers = Object.keys(summaryRows[0])
-      summaryTable = m("table.table", [
+      summaryTable = m("table.pure-table", [
         m("thead",
           m("tr", headers.map(function(d) {
             if (d == "_group_id") {
-              return m("th", "")
+              return m("th", "Group")
             }
             return m("th", d)
           }))
@@ -139,13 +139,10 @@ var ChartContainer = {
               return m("td", m("div",
                 {
                   style: {
-                    backgroundColor: groupColor(row[k]),
-                    height: "1.5rem",
-                    width: "3px",
-                    marginRight: "5px"
+                    color: groupColor(row[k])
                   }
                 },
-                ""))
+                row[k]))
             }
             return m("td", row[k])
           }))
@@ -157,7 +154,7 @@ var ChartContainer = {
     var eventsTable;
     if (events) {
       var headers = Object.keys(events[0])
-      eventsTable = m("table.table", [
+      eventsTable = m("table.pure-table", [
         m("thead",
           m("tr", headers.map(function(d) {
             if (d == "_id") {return}
@@ -177,21 +174,21 @@ var ChartContainer = {
 
     if (chartComponents.length > 0) {
       resultsComponents.push(m("div.row", [
-        m("h5", "Series"),
+        m("h2", "Series"),
         chartComponents
       ]));
     }
 
     if (summaryRows) {
       resultsComponents.push(m("div", {className: "row summary-table"}, [
-        m("h5", "Summary"),
+        m("h2", "Summary"),
         summaryTable
       ]));
     }
 
     if (events) {
       resultsComponents.push(m("div", {className: "row events-table"}, [
-        m("h5", "Events"),
+        m("h2", "Events"),
         eventsTable
       ]));
     }
@@ -243,41 +240,46 @@ var ChartContainer = {
       value: vnode.state.end.toJSON()
     });
 
-    var queryField = m("textarea.form-control", {
+    var queryField = m("textarea", {
       onchange: m.withAttr("value", function(v) {
         vnode.state.query = v;
         vnode.state.refresh();
         vnode.state.updateURL();
       }),
-      size: 120,
+      style: { width: "100%" },
       id: "query-text",
       value: vnode.state.query
     });
 
-    var inputs = [
-      m("div.row", [
-        m("div.col-3", [
-          m("label", {for: "query-collection"}, "Collection"),
-          collectionInputField
+
+    var inputs = m("form", {
+      "class": "pure-form pure-form-stacked"
+    }, [
+      m("fieldset", [
+        m("div.pure-g", [
+          m("div.pure-u-1-3", [
+            m("label", {for: "query-collection"}, "Collection"),
+            collectionInputField
+          ]),
+          m("div.pure-u-1-3", [
+            m("label", {for: "query-start"}, "Start timestamp"),
+            startInputField
+          ]),
+          m("div.pure-u-1-3", [
+            m("label", {for: "query-end"}, "End timestamp"),
+            endInputField
+          ]),
         ]),
-        m("div.col-3", [
-          m("label", {for: "query-start"}, "Start timestamp"),
-          startInputField
-        ]),
-        m("div.col-3", [
-          m("label", {for: "query-end"}, "End timestamp"),
-          endInputField
-        ]),
-      ]),
-      m("div.row", [
-        m("div.col-12", [
-          m("label", {for: "query-text"}, "Query"),
-          queryField
+        m("div.pure-g", [
+          m("div.pure-u-1", [
+            m("label", {for: "query-text"}, "Query"),
+            queryField
+          ])
         ])
       ])
-    ]
+    ])
 
-    return m("div", {style: "width: 100%;"}, [
+    return m("div", [
       inputs,
 
       m("div", resultsComponents)

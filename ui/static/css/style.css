@@ -3,20 +3,22 @@ body {
   padding: 1rem;
 }
 
+.container {
+  margin: 0 auto;
+  width: 50rem;
+}
+
 .row {
   margin-top: 1rem;
 }
 
 .chart {
-  margin: 1rem 0 1rem 0;
-  padding: 0.25rem;
-  width: 50%;
+
 }
 
 .chart .chart-name {
   font-weight: bold;
   color: #999;
-  font-size: 12px;
 }
 
 .chart-tooltip {

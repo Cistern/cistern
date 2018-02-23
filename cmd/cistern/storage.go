@@ -33,7 +33,7 @@ type EventCollection struct {
 }
 
 func OpenEventCollection(filename string) (*EventCollection, error) {
-	col, err := lm2.OpenCollection(filename, 100000)
+	col, err := lm2.OpenCollection(filename, 10000000000)
 	if err != nil {
 		if err == lm2.ErrDoesNotExist {
 			return nil, ErrDoesNotExist
@@ -47,7 +47,7 @@ func OpenEventCollection(filename string) (*EventCollection, error) {
 }
 
 func CreateEventCollection(filename string) (*EventCollection, error) {
-	col, err := lm2.NewCollection(filename, 100000)
+	col, err := lm2.NewCollection(filename, 10000000000)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +148,7 @@ func (c *EventCollection) Compact() error {
 		return err
 	}
 
-	col, err := lm2.OpenCollection(c.filename, 100000)
+	col, err := lm2.OpenCollection(c.filename, 10000000000)
 	if err != nil {
 		if err == lm2.ErrDoesNotExist {
 			return ErrDoesNotExist

@@ -91,3 +91,11 @@ func (rc *recordCache) purge() {
 		purged++
 	}
 }
+
+func (rc *recordCache) flushOffsets(offsets []int64) {
+	rc.lock.Lock()
+	for _, offset := range offsets {
+		delete(rc.cache, offset)
+	}
+	rc.lock.Unlock()
+}

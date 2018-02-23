@@ -26,9 +26,33 @@ var (
 	// ErrInternal is returned when the internal state of the collection
 	// is invalid. The collection should be closed and reopened.
 	ErrInternal = errors.New("lm2: internal error")
+	// ErrKeyNotFound is returned when a Cursor.Get() doesn't find
+	// the requested key.
+	ErrKeyNotFound = errors.New("lm2: key not found")
 
 	fileVersion = [8]byte{'l', 'm', '2', '_', '0', '0', '1', '\n'}
 )
+
+// RollbackError is the error type returned after rollbacks.
+type RollbackError struct {
+	DuplicateKey  bool
+	ConflictedKey string
+	Err           error
+}
+
+func (e RollbackError) Error() string {
+	if e.DuplicateKey {
+		return fmt.Sprintf("lm2: rolled back due to duplicate key (conflicted key: `%s`)",
+			e.ConflictedKey)
+	}
+	return fmt.Sprintf("lm2: rolled back (%s)", e.Err.Error())
+}
+
+// IsRollbackError returns true if err is a RollbackError.
+func IsRollbackError(err error) bool {
+	_, ok := err.(RollbackError)
+	return ok
+}
 
 // Collection represents an ordered linked list map.
 type Collection struct {
@@ -120,13 +144,15 @@ func (c *Collection) setDirty(offset int64, rec *record) {
 	c.dirty[offset] = rec
 }
 
-func (c *Collection) readRecord(offset int64) (*record, error) {
+func (c *Collection) readRecord(offset int64, dirty bool) (*record, error) {
 	if offset == 0 {
 		return nil, errors.New("lm2: invalid record offset 0")
 	}
 
-	if rec := c.getDirty(offset); rec != nil {
-		return rec, nil
+	if dirty {
+		if rec := c.getDirty(offset); rec != nil {
+			return rec, nil
+		}
 	}
 
 	c.cache.lock.RLock()
@@ -139,8 +165,8 @@ func (c *Collection) readRecord(offset int64) (*record, error) {
 	c.cache.lock.RUnlock()
 
 	recordHeaderBytes := [recordHeaderSize]byte{}
-	_, err := c.readAt(recordHeaderBytes[:], offset)
-	if err != nil {
+	n, err := c.readAt(recordHeaderBytes[:], offset)
+	if err != nil && n != recordHeaderSize {
 		return nil, fmt.Errorf("lm2: partial read (%s)", err)
 	}
 
@@ -151,8 +177,8 @@ func (c *Collection) readRecord(offset int64) (*record, error) {
 	}
 
 	keyValBuf := make([]byte, int(header.KeyLen)+int(header.ValLen))
-	_, err = c.readAt(keyValBuf, offset+recordHeaderSize)
-	if err != nil {
+	n, err = c.readAt(keyValBuf, offset+recordHeaderSize)
+	if err != nil && n != len(keyValBuf) {
 		return nil, fmt.Errorf("lm2: partial read (%s)", err)
 	}
 
@@ -167,11 +193,11 @@ func (c *Collection) readRecord(offset int64) (*record, error) {
 	}
 	c.stats.incRecordsRead(1)
 	c.stats.incCacheMisses(1)
-
+	c.cache.push(rec)
 	return rec, nil
 }
 
-func (c *Collection) nextRecord(rec *record, level int) (*record, error) {
+func (c *Collection) nextRecord(rec *record, level int, dirty bool) (*record, error) {
 	if rec == nil {
 		return nil, errors.New("lm2: invalid record")
 	}
@@ -179,12 +205,9 @@ func (c *Collection) nextRecord(rec *record, level int) (*record, error) {
 		// There's no next record.
 		return nil, nil
 	}
-	nextRec, err := c.readRecord(atomic.LoadInt64(&rec.Next[level]))
+	nextRec, err := c.readRecord(atomic.LoadInt64(&rec.Next[level]), dirty)
 	if err != nil {
 		return nil, err
-	}
-	if level >= 2 {
-		c.cache.push(rec)
 	}
 	return nextRec, nil
 }
@@ -420,4 +443,10 @@ func (c *Collection) CompactFunc(f func(key, value string) (string, string, bool
 	}
 	newCollection.Close()
 	return os.Rename(newCollection.f.Name(), c.f.Name())
+}
+
+// OK returns true if the internal state of the collection is valid.
+// If false is returned you should close and reopen the collection.
+func (c *Collection) OK() bool {
+	return atomic.LoadUint32(&c.internalState) == 0
 }

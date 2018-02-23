@@ -1,6 +1,7 @@
 package lm2
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"sync"
@@ -8,12 +9,18 @@ import (
 	"time"
 )
 
-func verifyOrder(t *testing.T, c *Collection) int {
+func verifyOrder(t *testing.T, c *Collection, errLock *sync.Mutex) int {
 	count := 0
 	prev := ""
 	cur, err := c.NewCursor()
 	if err != nil {
+		if errLock != nil {
+			errLock.Lock()
+		}
 		t.Fatal(err)
+		if errLock != nil {
+			errLock.Unlock()
+		}
 	}
 	for cur.Next() {
 		count++
@@ -22,7 +29,13 @@ func verifyOrder(t *testing.T, c *Collection) int {
 		}
 	}
 	if err = cur.Err(); err != nil {
+		if errLock != nil {
+			errLock.Lock()
+		}
 		t.Fatal(err)
+		if errLock != nil {
+			errLock.Unlock()
+		}
 	}
 	return count
 }
@@ -34,6 +47,15 @@ func TestCopy(t *testing.T) {
 	}
 	defer c.Destroy()
 
+	const failureProbConst = 0.001
+	failureProb := failureProbConst
+	c.readAt = func(b []byte, off int64) (int, error) {
+		if rand.Float64() <= failureProb {
+			return 0, errors.New("random failure")
+		}
+		return c.f.ReadAt(b, off)
+	}
+
 	const N = 1000
 	firstWriteStart := time.Now()
 	for i := 0; i < N; i++ {
@@ -43,12 +65,18 @@ func TestCopy(t *testing.T) {
 		val := fmt.Sprint(i)
 		wb := NewWriteBatch()
 		wb.Set(key, val)
+	RETRY:
 		if _, err := c.Update(wb); err != nil {
+			if IsRollbackError(err) {
+				t.Log("rollback")
+				goto RETRY
+			}
 			t.Fatal(err)
 		}
 	}
 	t.Log("First write pass time:", time.Now().Sub(firstWriteStart))
-	verifyOrder(t, c)
+	failureProb = 0
+	verifyOrder(t, c, nil)
 
 	c2, err := NewCollection("/tmp/test_copy_copy.lm2", 100)
 	if err != nil {
@@ -81,8 +109,13 @@ func TestCopy(t *testing.T) {
 		remaining--
 
 		if remaining == 0 {
+		RETRY2:
 			_, err := c2.Update(wb)
 			if err != nil {
+				if IsRollbackError(err) {
+					t.Log("rollback")
+					goto RETRY2
+				}
 				t.Fatal(err)
 			}
 			remaining = batchSize
@@ -91,8 +124,13 @@ func TestCopy(t *testing.T) {
 	}
 
 	if remaining < batchSize {
+	RETRY3:
 		_, err := c2.Update(wb)
 		if err != nil {
+			if IsRollbackError(err) {
+				t.Log("rollback")
+				goto RETRY3
+			}
 			t.Fatal(err)
 		}
 	}
@@ -100,10 +138,11 @@ func TestCopy(t *testing.T) {
 	t.Log("Second write pass time:", time.Now().Sub(secondWriteStart))
 
 	firstStart := time.Now()
-	count1 := verifyOrder(t, c)
+	failureProb = 0
+	count1 := verifyOrder(t, c, nil)
 	firstEnd := time.Now()
 	secondStart := firstEnd
-	count2 := verifyOrder(t, c2)
+	count2 := verifyOrder(t, c2, nil)
 	secondEnd := time.Now()
 	t.Log("Time to iterate through first list:", firstEnd.Sub(firstStart), "with", count1, "elements")
 	t.Log("Time to iterate through second list:", secondEnd.Sub(secondStart), "with", count2, "elements")
@@ -140,7 +179,7 @@ func TestWriteBatch(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	verifyOrder(t, c)
+	verifyOrder(t, c, nil)
 
 	cur, err := c.NewCursor()
 	if err != nil {
@@ -180,7 +219,7 @@ func TestWriteBatch(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	verifyOrder(t, c)
+	verifyOrder(t, c, nil)
 
 	cur, err = c.NewCursor()
 	if err != nil {
@@ -245,7 +284,7 @@ func TestWriteBatch1(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	verifyOrder(t, c)
+	verifyOrder(t, c, nil)
 }
 
 func TestWriteBatch1Concurrent(t *testing.T) {
@@ -263,6 +302,8 @@ func TestWriteBatch1Concurrent(t *testing.T) {
 	startWG.Add(NumGoroutines)
 	endWG.Add(NumGoroutines)
 
+	errLock := &sync.Mutex{}
+
 	for i := 0; i < NumGoroutines; i++ {
 		go func() {
 			for j := 0; j < N; j++ {
@@ -271,7 +312,9 @@ func TestWriteBatch1Concurrent(t *testing.T) {
 				val := fmt.Sprint(j)
 				wb.Set(key, val)
 				if _, err := c.Update(wb); err != nil {
+					errLock.Lock()
 					t.Fatal(err)
+					errLock.Unlock()
 				}
 				if j == 0 {
 					startWG.Done()
@@ -284,13 +327,15 @@ func TestWriteBatch1Concurrent(t *testing.T) {
 	// Wait for them to start working.
 	startWG.Wait()
 
-	verifyOrder(t, c)
-	verifyOrder(t, c)
+	for i := 0; i < 1000; i++ {
+		verifyOrder(t, c, errLock)
+		time.Sleep(time.Millisecond)
+	}
 
 	// Wait for them to end.
 	endWG.Wait()
 
-	verifyOrder(t, c)
+	verifyOrder(t, c, errLock)
 }
 
 func TestWriteBatch2(t *testing.T) {
@@ -355,7 +400,7 @@ func TestWriteBatch2(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	verifyOrder(t, c)
+	verifyOrder(t, c, nil)
 
 	cur, err := c.NewCursor()
 	if err != nil {
@@ -428,7 +473,7 @@ func TestWriteCloseOpen(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	verifyOrder(t, c)
+	verifyOrder(t, c, nil)
 
 	cur, err := c.NewCursor()
 	if err != nil {
@@ -729,7 +774,7 @@ func TestSimple(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	verifyOrder(t, c)
+	verifyOrder(t, c, nil)
 
 	cur, err := c.NewCursor()
 	if err != nil {
@@ -774,7 +819,7 @@ func TestLm2Log(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	verifyOrder(t, c)
+	verifyOrder(t, c, nil)
 
 	cur, err := c.NewCursor()
 	if err != nil {
@@ -846,7 +891,7 @@ func TestCompact(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	verifyOrder(t, c)
+	verifyOrder(t, c, nil)
 
 	err = c.Compact()
 	if err != nil {
@@ -900,7 +945,7 @@ func TestCopyCompact(t *testing.T) {
 		}
 	}
 	t.Log("First write pass time:", time.Now().Sub(firstWriteStart))
-	verifyOrder(t, c)
+	verifyOrder(t, c, nil)
 
 	compactStart := time.Now()
 	err = c.Compact()
@@ -913,7 +958,7 @@ func TestCopyCompact(t *testing.T) {
 	c, err = OpenCollection("/tmp/test_copycompact.lm2", 100)
 	defer c.Destroy()
 
-	count := verifyOrder(t, c)
+	count := verifyOrder(t, c, nil)
 	if count != N {
 		t.Error("expected count", N, "got", count)
 	}
@@ -964,7 +1009,7 @@ func TestCompactSkipKey(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	verifyOrder(t, c)
+	verifyOrder(t, c, nil)
 
 	err = c.CompactFunc(func(key, val string) (string, string, bool) {
 		if key == "key2" {
@@ -1001,4 +1046,191 @@ func TestCompactSkipKey(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Logf("%+v", c.Stats())
+}
+
+func TestDeleteAndUpdate(t *testing.T) {
+	expected := [][2]string{
+		{"key1", "1"},
+		{"key3", "3"},
+	}
+
+	c, err := NewCollection("/tmp/test_deleteandupdate.lm2", 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Destroy()
+
+	wb := NewWriteBatch()
+	wb.Set("key2", "2")
+	t.Log("Set", "key2", "2")
+	_, err = c.Update(wb)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wb = NewWriteBatch()
+	wb.Set("key1", "1")
+	t.Log("Set", "key1", "1")
+	wb.Set("key3", "3")
+	t.Log("Set", "key3", "3")
+	wb.Delete("key2")
+	t.Log("Delete", "key2")
+	_, err = c.Update(wb)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	verifyOrder(t, c, nil)
+
+	cur, err := c.NewCursor()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	i := 0
+	for cur.Next() {
+		if i == len(expected) {
+			t.Fatal("unexpected key", cur.Key())
+		}
+		if cur.Key() != expected[i][0] || cur.Value() != expected[i][1] {
+			t.Errorf("expected %v => %v, got %v => %v",
+				expected[i][0], expected[i][1], cur.Key(), cur.Value())
+		} else {
+			t.Logf("got %v => %v", cur.Key(), cur.Value())
+		}
+		i++
+	}
+	if err = cur.Err(); err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("%+v", c.Stats())
+}
+
+func TestOK(t *testing.T) {
+	c, err := NewCollection("/tmp/test_ok.lm2", 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Destroy()
+
+	c.writeAt = func(b []byte, offset int64) (int, error) {
+		return 0, errors.New("some failure")
+	}
+
+	wb := NewWriteBatch()
+	wb.Set("key2", "2")
+	t.Log("Set", "key2", "2")
+	_, err = c.Update(wb)
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+
+	if c.internalState != 1 {
+		t.Errorf("expected internalState to be 1 but got %d", c.internalState)
+	}
+
+	if c.OK() {
+		t.Error("expected OK() to return false")
+	}
+}
+
+func TestConflictRollback(t *testing.T) {
+	c, err := NewCollection("/tmp/test_conflictrollback.lm2", 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Destroy()
+
+	wb := NewWriteBatch()
+	wb.Set("key1", "1")
+	t.Log("Set", "key1", "1")
+	_, err = c.Update(wb)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wb = NewWriteBatch()
+	wb.AllowOverwrite(false)
+	wb.Set("key1", "2")
+	t.Log("Set", "key1", "2")
+	_, err = c.Update(wb)
+	if err == nil {
+		t.Fatal("expected a rollback")
+	}
+
+	if !IsRollbackError(err) {
+		t.Fatal("expected a rollback error")
+	}
+
+	rollbackErr := err.(RollbackError)
+	if !rollbackErr.DuplicateKey {
+		t.Error("expected DuplicateKey to be true")
+	}
+
+	if rollbackErr.ConflictedKey != "key1" {
+		t.Errorf("expected ConflictedKey to be `%s`, got `%s`",
+			"key1", rollbackErr.ConflictedKey)
+	}
+
+	if !c.OK() {
+		t.Error("expected OK() to return true")
+	}
+}
+
+func TestCursorGet(t *testing.T) {
+	c, err := NewCollection("/tmp/test_cursorget.lm2", 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Destroy()
+
+	wb := NewWriteBatch()
+	wb.Set("key1", "1")
+	wb.Set("key2", "2")
+	wb.Set("key3", "3")
+	wb.Set("key4", "4")
+
+	_, err = c.Update(wb)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	verifyOrder(t, c, nil)
+
+	cur, err := c.NewCursor()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	key2Val, err := cur.Get("key2")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if key2Val != "2" {
+		t.Fatalf("expected key2Val to be %s but got %s", "2", key2Val)
+	}
+
+	key1Val, err := cur.Get("key1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if key1Val != "1" {
+		t.Fatalf("expected key1Val to be %s but got %s", "1", key1Val)
+	}
+
+	key4Val, err := cur.Get("key4")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if key4Val != "4" {
+		t.Fatalf("expected key4Val to be %s but got %s", "4", key4Val)
+	}
+
+	_, err = cur.Get("missing")
+	if err != ErrKeyNotFound {
+		t.Fatalf("expected ErrKeyNotFound but got %v", err)
+	}
 }

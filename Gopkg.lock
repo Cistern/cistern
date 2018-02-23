@@ -4,8 +4,8 @@
 [[projects]]
   name = "github.com/Preetam/lm2"
   packages = ["."]
-  revision = "69053566e39cb20205a870b3be5d136f64851588"
-  version = "v2.0.2"
+  revision = "7f4de7685ecdd933c434d5474a8f00162d0d4176"
+  version = "v2.2.2"
 
 [[projects]]
   name = "github.com/Preetam/siesta"
@@ -15,7 +15,34 @@
 
 [[projects]]
   name = "github.com/aws/aws-sdk-go"
-  packages = ["aws","aws/awserr","aws/awsutil","aws/client","aws/client/metadata","aws/corehandlers","aws/credentials","aws/credentials/ec2rolecreds","aws/credentials/endpointcreds","aws/credentials/stscreds","aws/defaults","aws/ec2metadata","aws/endpoints","aws/request","aws/session","aws/signer/v4","internal/shareddefaults","private/protocol","private/protocol/json/jsonutil","private/protocol/jsonrpc","private/protocol/query","private/protocol/query/queryutil","private/protocol/rest","private/protocol/xml/xmlutil","service/cloudwatchlogs","service/sts"]
+  packages = [
+    "aws",
+    "aws/awserr",
+    "aws/awsutil",
+    "aws/client",
+    "aws/client/metadata",
+    "aws/corehandlers",
+    "aws/credentials",
+    "aws/credentials/ec2rolecreds",
+    "aws/credentials/endpointcreds",
+    "aws/credentials/stscreds",
+    "aws/defaults",
+    "aws/ec2metadata",
+    "aws/endpoints",
+    "aws/request",
+    "aws/session",
+    "aws/signer/v4",
+    "internal/shareddefaults",
+    "private/protocol",
+    "private/protocol/json/jsonutil",
+    "private/protocol/jsonrpc",
+    "private/protocol/query",
+    "private/protocol/query/queryutil",
+    "private/protocol/rest",
+    "private/protocol/xml/xmlutil",
+    "service/cloudwatchlogs",
+    "service/sts"
+  ]
   revision = "afd601335e2a72d43caa3af6bd2abe512fcc3bfd"
   version = "v1.10.14"
 
@@ -34,6 +61,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "17ffd9ae69162a12b313f8c625d5ebed559fb1d29d60269cc8628e9e87fa9666"
+  inputs-digest = "daa9850241fa031075413f35bdc351a3945f932ae40d3365449b25205766a90c"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -47,6 +47,8 @@ func (o OrderBy) Less(i, j int) bool {
 }
 
 func (c *EventCollection) Query(desc query.Desc) (*QueryResult, error) {
+	log.Printf("%#v", c.col.Stats())
+	defer log.Printf("%#v", c.col.Stats())
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 

@@ -26,4 +26,4 @@
 
 [[constraint]]
   name = "github.com/Preetam/lm2"
-  branch = "master"
+  version = ">2.0.0"
